@@ -5,12 +5,10 @@ DEFAULT_CONFIG: BaseConfig = {
     "EMBEDDING": "openai:text-embedding-3-small",
     "SIMILARITY_THRESHOLD": 0.42,
     "FAST_LLM": "openai:gpt-4o-mini",
-    # Has support for long responses (2k+ words).
-    "SMART_LLM": "openai:gpt-4.1",
-    # Can be used with o1 or o3, please note it will make tasks slower.
-    "STRATEGIC_LLM": "openai:o4-mini",
-    "FAST_TOKEN_LIMIT": 2000,
-    "SMART_TOKEN_LIMIT": 4000,
+    "SMART_LLM": "openai:gpt-4.1",  # Has support for long responses (2k+ words).
+    "STRATEGIC_LLM": "openai:o4-mini",  # Can be used with o1 or o3, please note it will make tasks slower.
+    "FAST_TOKEN_LIMIT": 3000,
+    "SMART_TOKEN_LIMIT": 6000,
     "STRATEGIC_TOKEN_LIMIT": 4000,
     "BROWSE_CHUNK_MAX_LENGTH": 8192,
     "CURATE_SOURCES": False,
@@ -29,6 +27,9 @@ DEFAULT_CONFIG: BaseConfig = {
     "LANGUAGE": "english",
     "REPORT_SOURCE": "web",
     "DOC_PATH": "./my-docs",
+    "PROMPT_FAMILY": "default",
+    "LLM_KWARGS": {},
+    "EMBEDDING_KWARGS": {},
     # Deep research specific settings
     "DEEP_RESEARCH_BREADTH": 3,
     "DEEP_RESEARCH_DEPTH": 2,
