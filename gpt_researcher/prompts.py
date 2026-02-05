@@ -1,7 +1,7 @@
 import warnings
 from datetime import date, datetime, timezone
 
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 
 from .config import Config
 from .utils.enum import ReportSource, ReportType, Tone
@@ -34,6 +34,180 @@ class PromptFamily:
         or providers
         """
         self.cfg = config
+
+    # MCP-specific prompts
+    @staticmethod
+    def generate_mcp_tool_selection_prompt(query: str, tools_info: List[Dict], max_tools: int = 3) -> str:
+        """
+        Generate prompt for LLM-based MCP tool selection.
+        
+        Args:
+            query: The research query
+            tools_info: List of available tools with their metadata
+            max_tools: Maximum number of tools to select
+            
+        Returns:
+            str: The tool selection prompt
+        """
+        import json
+        
+        return f"""You are a research assistant helping to select the most relevant tools for a research query.
+
+RESEARCH QUERY: "{query}"
+
+AVAILABLE TOOLS:
+{json.dumps(tools_info, indent=2)}
+
+TASK: Analyze the tools and select EXACTLY {max_tools} tools that are most relevant for researching the given query.
+
+SELECTION CRITERIA:
+- Choose tools that can provide information, data, or insights related to the query
+- Prioritize tools that can search, retrieve, or access relevant content
+- Consider tools that complement each other (e.g., different data sources)
+- Exclude tools that are clearly unrelated to the research topic
+
+Return a JSON object with this exact format:
+{{
+  "selected_tools": [
+    {{
+      "index": 0,
+      "name": "tool_name",
+      "relevance_score": 9,
+      "reason": "Detailed explanation of why this tool is relevant"
+    }}
+  ],
+  "selection_reasoning": "Overall explanation of the selection strategy"
+}}
+
+Select exactly {max_tools} tools, ranked by relevance to the research query.
+"""
+
+    @staticmethod
+    def generate_mcp_research_prompt(query: str, selected_tools: List) -> str:
+        """
+        Generate prompt for MCP research execution with selected tools.
+        
+        Args:
+            query: The research query
+            selected_tools: List of selected MCP tools
+            
+        Returns:
+            str: The research execution prompt
+        """
+        # Handle cases where selected_tools might be strings or objects with .name attribute
+        tool_names = []
+        for tool in selected_tools:
+            if hasattr(tool, 'name'):
+                tool_names.append(tool.name)
+            else:
+                tool_names.append(str(tool))
+        
+        return f"""You are a research assistant with access to specialized tools. Your task is to research the following query and provide comprehensive, accurate information.
+
+RESEARCH QUERY: "{query}"
+
+INSTRUCTIONS:
+1. Use the available tools to gather relevant information about the query
+2. Call multiple tools if needed to get comprehensive coverage
+3. If a tool call fails or returns empty results, try alternative approaches
+4. Synthesize information from multiple sources when possible
+5. Focus on factual, relevant information that directly addresses the query
+
+AVAILABLE TOOLS: {tool_names}
+
+Please conduct thorough research and provide your findings. Use the tools strategically to gather the most relevant and comprehensive information."""
+
+    # Image generation prompts
+    @staticmethod
+    def generate_image_analysis_prompt(
+        query: str,
+        sections: List[Dict[str, Any]],
+        max_images: int = 3,
+    ) -> str:
+        """Generate prompt for analyzing which report sections need images.
+        
+        Args:
+            query: The research query.
+            sections: List of report sections with header and content.
+            max_images: Maximum number of images to suggest.
+            
+        Returns:
+            str: The analysis prompt.
+        """
+        sections_text = "\n\n".join([
+            f"### Section {i+1}: {s['header']}\n{s['content'][:500]}..."
+            for i, s in enumerate(sections)
+        ])
+        
+        return f"""Analyze the following research report sections and identify which {max_images} sections would benefit MOST from a visual illustration or diagram.
+
+RESEARCH TOPIC: {query}
+
+REPORT SECTIONS:
+{sections_text}
+
+For each recommended section, provide:
+1. The section number (1-indexed)
+2. A specific, detailed image prompt that would create an informative illustration
+3. A brief explanation of why this section benefits from visualization
+
+IMPORTANT GUIDELINES:
+- Choose sections where visual representation would genuinely aid understanding
+- Focus on concepts, processes, comparisons, data flows, or statistics that are inherently visual
+- Avoid sections that are purely textual analysis, introductions, or conclusions
+- The image prompt should be specific enough to generate a relevant, professional illustration
+- Images should be informative and educational, not decorative
+- Consider diagrams, flowcharts, comparison charts, or conceptual illustrations
+
+Respond in JSON format:
+{{
+    "suggestions": [
+        {{
+            "section_number": 1,
+            "section_header": "Section Title",
+            "image_prompt": "Detailed prompt for generating an informative illustration...",
+            "image_type": "diagram|flowchart|comparison|concept|data_visualization",
+            "reason": "Why this section benefits from visualization"
+        }}
+    ]
+}}
+
+Return ONLY the JSON, no additional text."""
+
+    @staticmethod
+    def generate_image_prompt_enhancement(
+        base_prompt: str,
+        section_content: str,
+        research_topic: str,
+    ) -> str:
+        """Enhance an image prompt with context for better generation.
+        
+        Args:
+            base_prompt: The base image generation prompt.
+            section_content: Content from the report section.
+            research_topic: The main research topic.
+            
+        Returns:
+            str: Enhanced image prompt.
+        """
+        return f"""Create a professional, informative illustration for a research report.
+
+RESEARCH TOPIC: {research_topic}
+
+IMAGE DESCRIPTION: {base_prompt}
+
+CONTEXT FROM REPORT:
+{section_content[:800]}
+
+STYLE REQUIREMENTS:
+- Professional and clean design suitable for academic/business reports
+- Clear, easy-to-understand visual elements
+- Modern, minimalist aesthetic
+- Use a professional color palette (blues, teals, grays)
+- Avoid excessive text in the image
+- High contrast for readability
+- If showing data or comparisons, use clear labels and legends
+- Suitable for both digital viewing and printing"""
 
     @staticmethod
     def generate_search_queries_prompt(
@@ -123,15 +297,15 @@ You should strive to write the report as long as you can using all relevant and 
 Please follow all of the following guidelines in your report:
 - You MUST determine your own concrete and valid opinion based on the given information. Do NOT defer to general and meaningless conclusions.
 - You MUST write the report with markdown syntax and {report_format} format.
+- Structure your report with clear markdown headers: use # for the main title, ## for major sections, and ### for subsections.
 - Use markdown tables when presenting structured data or comparisons to enhance readability.
 - You MUST prioritize the relevance, reliability, and significance of the sources you use. Choose trusted sources over less reliable ones.
 - You must also prioritize new articles over older articles if the source can be trusted.
-- You MUST NOT include a table of contents. Start from the main report body directly.
+- You MUST NOT include a table of contents, but DO include proper markdown headers (# ## ###) to structure your report clearly.
 - Use in-text citation references in {report_format} format and make it with markdown hyperlink placed at the end of the sentence or paragraph that references them like this: ([in-text citation](url)).
 - Don't forget to add a reference list at the end of the report in {report_format} format and full url links without hyperlinks.
 - {reference_prompt}
 - {tone_prompt}
-
 You MUST write the report in the following language: {language}.
 Please do your best, this is very important to my career.
 Assume that the current date is {date.today()}.
@@ -349,6 +523,29 @@ response:
             f"query cannot be answered using the text, YOU MUST summarize the text in short.\n Include all factual "
             f"information such as numbers, stats, quotes, etc if available. "
         )
+
+    @staticmethod
+    def generate_quick_summary_prompt(query: str, context: str) -> str:
+        """Generates the quick summary prompt for the given question and context.
+        Args:
+            query (str): The query to generate the summary for
+            context (str): The search results to summarize
+        Returns:
+            str: The quick summary prompt
+        """
+        return f"""
+Synthesize a comprehensive answer to the following query based ONLY on the provided search results.
+Query: "{query}"
+
+Search Results:
+{context}
+
+Instructions:
+1. Provide a single, continuous narrative summary.
+2. Cite your sources using numbers [1], [2], etc., corresponding to the search results.
+3. If the results are insufficient to answer the query, state that clearly.
+4. Focus on accuracy and relevance.
+"""
 
     @staticmethod
     def pretty_print_docs(docs: list[Document], top_n: int | None = None) -> str:

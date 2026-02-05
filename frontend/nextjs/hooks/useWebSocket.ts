@@ -7,19 +7,26 @@ export const useWebSocket = (
   setAnswer: React.Dispatch<React.SetStateAction<string>>, 
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
   setShowHumanFeedback: React.Dispatch<React.SetStateAction<boolean>>,
-  setQuestionForHuman: React.Dispatch<React.SetStateAction<boolean | true>>,
+  setQuestionForHuman: React.Dispatch<React.SetStateAction<boolean | true>>
 ) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const heartbeatInterval = useRef<number>();
 
-  // Cleanup function for heartbeat
+  // Cleanup function for heartbeat and socket on unmount
   useEffect(() => {
     return () => {
+      // Clear heartbeat interval
       if (heartbeatInterval.current) {
         clearInterval(heartbeatInterval.current);
       }
+      
+      // Close socket on unmount if it exists and is open
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log('Closing WebSocket due to component unmount');
+        socket.close(1000, "Component unmounted");
+      }
     };
-  }, []);
+  }, [socket]);
 
   const startHeartbeat = (ws: WebSocket) => {
     // Clear any existing heartbeat
@@ -35,61 +42,75 @@ export const useWebSocket = (
     }, 30000); // Send ping every 30 seconds
   };
 
-  const initializeWebSocket = useCallback((promptValue: string, chatBoxSettings: ChatBoxSettings) => {
-    console.log('🔌 WebSocket initialization called with:', { promptValue, chatBoxSettings });
-    
+  const initializeWebSocket = useCallback((
+    promptValue: string, 
+    chatBoxSettings: ChatBoxSettings
+  ) => {
+    // Close existing socket if any
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      console.log('Closing existing WebSocket connection');
+      socket.close(1000, "New connection requested");
+    }
+
     const storedConfig = localStorage.getItem('apiVariables');
     const apiVariables = storedConfig ? JSON.parse(storedConfig) : {};
 
-    if (!socket && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       
       let fullHost = getHost()
       const protocol = fullHost.includes('https') ? 'wss:' : 'ws:'
       const cleanHost = fullHost.replace('http://', '').replace('https://', '')
       const ws_uri = `${protocol}//${cleanHost}/ws`
 
-      console.log('🌐 Connecting to WebSocket:', ws_uri);
-
+      console.log(`Creating new WebSocket connection to ${ws_uri}`);
       const newSocket = new WebSocket(ws_uri);
       setSocket(newSocket);
 
+      // WebSocket connection opened handler
       newSocket.onopen = () => {
-        console.log('✅ WebSocket connected successfully');
-        console.log('📋 Sending research request with chatBoxSettings:', chatBoxSettings);
+        console.log('WebSocket connection opened');
         
         const domainFilters = JSON.parse(localStorage.getItem('domainFilters') || '[]');
         const domains = domainFilters ? domainFilters.map((domain: any) => domain.value) : [];
-        const { report_type, report_source, tone } = chatBoxSettings;
+        const { report_type, report_source, tone, mcp_enabled, mcp_configs, mcp_strategy } = chatBoxSettings;
         
-        let data = "start " + JSON.stringify({ 
-          task: promptValue,
-          report_type, 
-          report_source, 
-          tone,
-          query_domains: domains
-        });
+        // Start a new research
+        try {
+          console.log(`Starting new research for: ${promptValue}`);
+          const dataToSend = { 
+            task: promptValue,
+            report_type, 
+            report_source, 
+            tone,
+            query_domains: domains,
+            mcp_enabled: mcp_enabled || false,
+            mcp_strategy: mcp_strategy || "fast",
+            mcp_configs: mcp_configs || []
+          };
+          
+          // Make sure we have a properly formatted command with a space after start
+          const message = `start ${JSON.stringify(dataToSend)}`;
+          console.log(`Sending start message, length: ${message.length}`);
+          newSocket.send(message);
+        } catch (error) {
+          console.error("Error preparing start message:", error);
+        }
         
-        console.log('📤 Sending WebSocket message:', data);
-        newSocket.send(data);
         startHeartbeat(newSocket);
       };
 
       newSocket.onmessage = (event) => {
-        console.log('📥 WebSocket message received:', event.data);
-        
         try {
           // Handle ping response
-          if (event.data === 'pong') {
-            console.log('🏓 Received pong response');
-            return;
-          }
+          if (event.data === 'pong') return;
 
           // Try to parse JSON data
+          console.log(`Received WebSocket message: ${event.data.substring(0, 100)}...`);
           const data = JSON.parse(event.data);
-          console.log('📊 Parsed WebSocket data:', data);
           
-          if (data.type === 'human_feedback' && data.content === 'request') {
-            console.log('👤 Human feedback requested');
+          if (data.type === 'error') {
+            console.error(`Server error: ${data.output}`);
+          } else if (data.type === 'human_feedback' && data.content === 'request') {
             setQuestionForHuman(data.output);
             setShowHumanFeedback(true);
           } else {
@@ -97,20 +118,22 @@ export const useWebSocket = (
             setOrderedData((prevOrder) => [...prevOrder, { ...data, contentAndType }]);
 
             if (data.type === 'report') {
-              console.log('📄 Received report data, updating answer');
               setAnswer((prev: string) => prev + data.output);
-            } else if (data.type === 'path' || data.type === 'chat') {
-              console.log('🏁 Research completed, stopping loading');
+            } else if (data.type === 'report_complete') {
+              // Replace entire report with the complete version (includes images)
+              console.log('Received complete report with images');
+              setAnswer(data.output);
+            } else if (data.type === 'path') {
               setLoading(false);
             }
           }
         } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error, 'Raw data:', event.data);
+          console.error('Error parsing WebSocket message:', error, event.data);
         }
       };
 
-      newSocket.onclose = () => {
-        console.log('🔌 WebSocket connection closed');
+      newSocket.onclose = (event) => {
+        console.log(`WebSocket connection closed: code=${event.code}, reason=${event.reason}`);
         if (heartbeatInterval.current) {
           clearInterval(heartbeatInterval.current);
         }
@@ -118,15 +141,13 @@ export const useWebSocket = (
       };
 
       newSocket.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.error('WebSocket error:', error);
         if (heartbeatInterval.current) {
           clearInterval(heartbeatInterval.current);
         }
       };
-    } else if (socket) {
-      console.log('⚠️ WebSocket already exists, skipping initialization');
     }
-  }, [socket]); // Remove currentApiUrl from dependencies
+  }, [socket, setOrderedData, setAnswer, setLoading, setShowHumanFeedback, setQuestionForHuman]);
 
   return { socket, setSocket, initializeWebSocket };
 };

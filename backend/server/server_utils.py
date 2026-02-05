@@ -9,13 +9,23 @@ from typing import Awaitable, Dict, List, Any
 from fastapi.responses import JSONResponse, FileResponse
 from gpt_researcher.document.document import DocumentLoader
 from gpt_researcher import GPTResearcher
-from backend.utils import write_md_to_pdf, write_md_to_word, write_text_to_md
+from utils import write_md_to_pdf, write_md_to_word, write_text_to_md
 from pathlib import Path
 from datetime import datetime
 from fastapi import HTTPException
 import logging
+import hashlib
 
-logging.basicConfig(level=logging.DEBUG)
+# Import chat agent
+try:
+    import sys
+    backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if backend_path not in sys.path:
+        sys.path.insert(0, backend_path)
+    from chat.chat import ChatAgentWithMemory
+except ImportError:
+    ChatAgentWithMemory = None
+
 logger = logging.getLogger(__name__)
 
 class CustomLogsHandler:
@@ -65,7 +75,6 @@ class CustomLogsHandler:
         # Save updated log file
         with open(self.log_file, 'w') as f:
             json.dump(log_data, f, indent=2)
-        logger.debug(f"Log entry written to: {self.log_file}")
 
 
 class Researcher:
@@ -105,16 +114,10 @@ def sanitize_filename(filename: str) -> str:
     # Split into components
     prefix, timestamp, *task_parts = filename.split('_')
     task = '_'.join(task_parts)
-    
-    # Calculate max length for task portion
-    # 255 - len(os.getcwd()) - len("\\gpt-researcher\\outputs\\") - len("task_") - len(timestamp) - len("_.json") - safety_margin
-    max_task_length = 255 - len(os.getcwd()) - 24 - 5 - 10 - 6 - 5  # ~189 chars for task
-    
-    # Truncate task if needed
-    truncated_task = task[:max_task_length] if len(task) > max_task_length else task
-    
+    task_hash = hashlib.md5(task.encode('utf-8', errors='ignore')).hexdigest()[:10]
+            
     # Reassemble and clean the filename
-    sanitized = f"{prefix}_{timestamp}_{truncated_task}"
+    sanitized = f"{prefix}_{timestamp}_{task_hash}"
     return re.sub(r"[^\w\s-]", "", sanitized).strip()
 
 
@@ -129,15 +132,13 @@ async def handle_start_command(websocket, data: str, manager):
         headers,
         report_source,
         query_domains,
+        mcp_enabled,
+        mcp_strategy,
+        mcp_configs,
     ) = extract_command_data(json_data)
 
     if not task or not report_type:
-        print("❌ Error: Missing task or report_type")
-        await websocket.send_json({
-            "type": "logs",
-            "content": "error", 
-            "output": f"Missing required parameters - task: {task}, report_type: {report_type}"
-        })
+        print("Error: Missing task or report_type")
         return
 
     # Create logs handler with websocket and task
@@ -162,6 +163,9 @@ async def handle_start_command(websocket, data: str, manager):
         websocket,
         headers,
         query_domains,
+        mcp_enabled,
+        mcp_strategy,
+        mcp_configs,
     )
     report = str(report)
     file_paths = await generate_report_files(report, sanitized_filename)
@@ -175,10 +179,75 @@ async def handle_human_feedback(data: str):
     print(f"Received human feedback: {feedback_data}")
     # TODO: Add logic to forward the feedback to the appropriate agent or update the research state
 
-async def handle_chat(websocket, data: str, manager):
-    json_data = json.loads(data[4:])
-    print(f"Received chat message: {json_data.get('message')}")
-    await manager.chat(json_data.get("message"), websocket)
+
+async def handle_chat_command(websocket, data: str):
+    """Handle chat command from WebSocket."""
+    try:
+        # Parse chat data - format is "chat {json_data}"
+        json_str = data[5:].strip()  # Remove "chat " prefix
+        chat_data = json.loads(json_str)
+        
+        message = chat_data.get("message", "")
+        report = chat_data.get("report", "")
+        messages = chat_data.get("messages", [])
+        
+        # If only message is provided, convert to messages format
+        if message and not messages:
+            messages = [{"role": "user", "content": message}]
+        
+        if not messages:
+            await websocket.send_json({
+                "type": "chat",
+                "content": "No message provided.",
+                "role": "assistant"
+            })
+            return
+        
+        # Check if ChatAgentWithMemory is available
+        if ChatAgentWithMemory is None:
+            await websocket.send_json({
+                "type": "chat",
+                "content": "Chat functionality is not available. Please check the server configuration.",
+                "role": "assistant"
+            })
+            return
+        
+        # Create chat agent with the report context
+        chat_agent = ChatAgentWithMemory(
+            report=report,
+            config_path="default",
+            headers=None
+        )
+        
+        # Process the chat
+        response_content, tool_calls_metadata = await chat_agent.chat(messages, websocket)
+        
+        # Send response back via WebSocket
+        await websocket.send_json({
+            "type": "chat",
+            "content": response_content,
+            "role": "assistant",
+            "metadata": {
+                "tool_calls": tool_calls_metadata
+            } if tool_calls_metadata else None
+        })
+        
+        logger.info(f"Chat response sent successfully")
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse chat data: {e}")
+        await websocket.send_json({
+            "type": "chat",
+            "content": f"Error: Invalid message format - {str(e)}",
+            "role": "assistant"
+        })
+    except Exception as e:
+        logger.error(f"Error handling chat command: {e}\n{traceback.format_exc()}")
+        await websocket.send_json({
+            "type": "chat",
+            "content": f"Error processing your message: {str(e)}",
+            "role": "assistant"
+        })
 
 async def generate_report_files(report: str, filename: str) -> Dict[str, str]:
     pdf_path = await write_md_to_pdf(report, filename)
@@ -277,6 +346,7 @@ async def handle_websocket_communication(websocket, manager):
         while True:
             try:
                 data = await websocket.receive_text()
+                logger.info(f"Received WebSocket message: {data[:50]}..." if len(data) > 50 else data)
                 
                 if data == "ping":
                     await websocket.send_text("pong")
@@ -285,25 +355,36 @@ async def handle_websocket_communication(websocket, manager):
                     logger.warning(
                         f"Received request while task is already running. Request data preview: {data[: min(20, len(data))]}..."
                     )
-                    websocket.send_json(
+                    await websocket.send_json(
                         {
-                            "types": "logs",
+                            "type": "logs",
+                            "content": "warning",
                             "output": "Task already running. Please wait.",
                         }
                     )
-                elif data.startswith("start"):
+                # Normalize command detection by checking startswith after stripping whitespace
+                elif data.strip().startswith("start"):
+                    logger.info(f"Processing start command")
                     running_task = run_long_running_task(
                         handle_start_command(websocket, data, manager)
                     )
-                elif data.startswith("human_feedback"):
+                elif data.strip().startswith("human_feedback"):
+                    logger.info(f"Processing human_feedback command")
                     running_task = run_long_running_task(handle_human_feedback(data))
-                elif data.startswith("chat"):
-                    running_task = run_long_running_task(
-                        handle_chat(websocket, data, manager)
-                    )
+                elif data.strip().startswith("chat"):
+                    logger.info(f"Processing chat command")
+                    running_task = run_long_running_task(handle_chat_command(websocket, data))
                 else:
-                    print("Error: Unknown command or not enough parameters provided.")
+                    error_msg = f"Error: Unknown command or not enough parameters provided. Received: '{data[:100]}...'" if len(data) > 100 else f"Error: Unknown command or not enough parameters provided. Received: '{data}'"
+                    logger.error(error_msg)
+                    print(error_msg)
+                    await websocket.send_json({
+                        "type": "error",
+                        "content": "error",
+                        "output": "Unknown command received by server"
+                    })
             except Exception as e:
+                logger.error(f"WebSocket error: {str(e)}\n{traceback.format_exc()}")
                 print(f"WebSocket error: {e}")
                 break
     finally:
@@ -320,4 +401,7 @@ def extract_command_data(json_data: Dict) -> tuple:
         json_data.get("headers", {}),
         json_data.get("report_source"),
         json_data.get("query_domains", []),
+        json_data.get("mcp_enabled", False),
+        json_data.get("mcp_strategy", "fast"),
+        json_data.get("mcp_configs", []),
     )

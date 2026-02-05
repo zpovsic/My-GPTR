@@ -1,4 +1,6 @@
 import asyncio
+import hashlib
+import time
 from typing import List, Dict, Set, Optional, Any
 from fastapi import WebSocket
 
@@ -20,6 +22,8 @@ class DetailedReport:
         subtopics: List[Dict] = [],
         headers: Optional[Dict] = None,
         complement_source_urls: bool = False,
+        mcp_configs=None,
+        mcp_strategy=None,
     ):
         self.query = query
         self.report_type = report_type
@@ -34,24 +38,42 @@ class DetailedReport:
         self.headers = headers or {}
         self.complement_source_urls = complement_source_urls
         
-        self.gpt_researcher = GPTResearcher(
-            query=self.query,
-            query_domains=self.query_domains,
-            report_type="research_report",
-            report_source=self.report_source,
-            source_urls=self.source_urls,
-            document_urls=self.document_urls,
-            config_path=self.config_path,
-            tone=self.tone,
-            websocket=self.websocket,
-            headers=self.headers,
-            complement_source_urls=self.complement_source_urls
-        )
+        # Generate a unique research ID for this report
+        self.research_id = self._generate_research_id(query)
+        
+        # Initialize researcher with optional MCP parameters
+        gpt_researcher_params = {
+            "query": self.query,
+            "query_domains": self.query_domains,
+            "report_type": "research_report",
+            "report_source": self.report_source,
+            "source_urls": self.source_urls,
+            "document_urls": self.document_urls,
+            "config_path": self.config_path,
+            "tone": self.tone,
+            "websocket": self.websocket,
+            "headers": self.headers,
+            "complement_source_urls": self.complement_source_urls,
+        }
+
+        # Add MCP parameters if provided
+        if mcp_configs is not None:
+            gpt_researcher_params["mcp_configs"] = mcp_configs
+        if mcp_strategy is not None:
+            gpt_researcher_params["mcp_strategy"] = mcp_strategy
+
+        self.gpt_researcher = GPTResearcher(**gpt_researcher_params)
         self.existing_headers: List[Dict] = []
         self.global_context: List[str] = []
         self.global_written_sections: List[str] = []
         self.global_urls: Set[str] = set(
             self.source_urls) if self.source_urls else set()
+
+    def _generate_research_id(self, query: str) -> str:
+        """Generate a unique research ID from query and timestamp."""
+        timestamp = str(int(time.time()))
+        query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
+        return f"detailed_{timestamp}_{query_hash}"
 
     async def run(self) -> str:
         await self._initial_research()
@@ -107,7 +129,10 @@ class DetailedReport:
             role=self.gpt_researcher.role,
             tone=self.tone,
             complement_source_urls=self.complement_source_urls,
-            source_urls=self.source_urls
+            source_urls=self.source_urls,
+            # Propagate MCP configuration so follow-up researchers can use MCP
+            mcp_configs=self.gpt_researcher.mcp_configs,
+            mcp_strategy=self.gpt_researcher.mcp_strategy
         )
 
         subtopic_assistant.context = list(set(self.global_context))
@@ -126,7 +151,11 @@ class DetailedReport:
             current_subtopic_task, parse_draft_section_titles_text, self.global_written_sections
         )
 
-        subtopic_report = await subtopic_assistant.write_report(self.existing_headers, relevant_contents)
+        # Write subtopic report (images are pre-generated at the main research level)
+        subtopic_report = await subtopic_assistant.write_report(
+            existing_headers=self.existing_headers,
+            relevant_written_contents=relevant_contents,
+        )
 
         self.global_written_sections.extend(self.gpt_researcher.extract_sections(subtopic_report))
         self.global_context = list(set(subtopic_assistant.context))
@@ -145,4 +174,6 @@ class DetailedReport:
         conclusion_with_references = self.gpt_researcher.add_references(
             conclusion, self.gpt_researcher.visited_urls)
         report = f"{introduction}\n\n{toc}\n\n{report_body}\n\n{conclusion_with_references}"
+        
+        # Note: Images are now pre-generated during conduct_research() and embedded during write_report()
         return report

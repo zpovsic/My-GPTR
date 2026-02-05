@@ -21,8 +21,8 @@ Below you can find examples for how to configure the various supported LLMs.
 OPENAI_API_KEY=[Your Key]
 
 # specify llms
-FAST_LLM=openai:gpt-4o-mini
-SMART_LLM=openai:gpt-4.1
+FAST_LLM=openai:gpt-5-mini
+SMART_LLM=openai:gpt-5
 STRATEGIC_LLM=openai:o4-mini
 
 # specify embedding
@@ -205,6 +205,19 @@ EMBEDDING=mistralai:nomic-ai/nomic-embed-text-v1.5
 
 Add `langchain-together` to [requirements.txt](https://github.com/assafelovic/gpt-researcher/blob/master/requirements.txt) for Docker Support or `pip install` it
 
+## NetMind
+[NetMind](https://netmind.ai/) provide a variety of [model API](https://www.netmind.ai/modelsLibrary) services—including LLM, image, text, audio, and video—that add limitless possibilities for scaling your application.
+```env
+NETMIND_API_KEY=[Your Key]
+
+FAST_LLM=netmind:deepseek-ai/DeepSeek-V3-0324
+SMART_LLM=netmind:deepseek-ai/DeepSeek-R1-0528
+STRATEGIC_LLM=netmind:deepseek-ai/DeepSeek-V3-0324
+
+EMBEDDING=netmind:nvidia/NV-Embed-v2
+```
+Add langchain-netmind to [requirements.txt](https://github.com/assafelovic/gpt-researcher/blob/master/requirements.txt) for Docker Support or pip install it
+
 ## HuggingFace
 
 This integration requires a bit of extra work. Follow [this guide](https://python.langchain.com/v0.1/docs/integrations/chat/huggingface/) to learn more.
@@ -312,6 +325,20 @@ FAST_LLM=deepseek:deepseek-chat
 SMART_LLM=deepseek:deepseek-chat
 STRATEGIC_LLM=deepseek:deepseek-chat
 ```
+
+## Dashscope
+
+```envs
+DASHSCOPE_API_KEY=[Your Key]
+export FAST_LLM=dashscope:qwen3-32b
+export SMART_LLM=dashscope:qwen-turbo-2025-04-28
+export STRATEGIC_LLM=dashscope:qwen-plus-latest
+
+export EMBEDDING=dashscope:text-embedding-v3
+```
+
+Add `dashscope` to [requirements.txt](https://github.com/assafelovic/gpt-researcher/blob/master/requirements.txt) for Docker Support or `pip install` it
+
 ## Openrouter.ai
 
 ```env

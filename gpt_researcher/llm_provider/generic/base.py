@@ -32,6 +32,7 @@ _SUPPORTED_PROVIDERS = {
     "openrouter",
     "vllm_openai",
     "aimlapi",
+    "netmind",
 }
 
 NO_SUPPORT_TEMPERATURE_MODELS = [
@@ -47,6 +48,9 @@ NO_SUPPORT_TEMPERATURE_MODELS = [
     "o3-2025-04-16",
     "o4-mini",
     "o4-mini-2025-04-16",
+    # GPT-5 family: OpenAI enforces default temperature only
+    "gpt-5",
+    "gpt-5-mini",
 ]
 
 SUPPORT_REASONING_EFFORT_MODELS = [
@@ -93,6 +97,10 @@ class GenericLLMProvider:
         if provider == "openai":
             _check_pkg("langchain_openai")
             from langchain_openai import ChatOpenAI
+
+            # Support custom OpenAI-compatible APIs via OPENAI_BASE_URL
+            if "openai_api_base" not in kwargs and os.environ.get("OPENAI_BASE_URL"):
+                kwargs["openai_api_base"] = os.environ["OPENAI_BASE_URL"]
 
             llm = ChatOpenAI(**kwargs)
         elif provider == "anthropic":
@@ -167,10 +175,13 @@ class GenericLLMProvider:
                 kwargs = {"model_id": model_id, "model_kwargs": kwargs}
             llm = ChatBedrock(**kwargs)
         elif provider == "dashscope":
-            _check_pkg("langchain_dashscope")
-            from langchain_dashscope import ChatDashScope
+            _check_pkg("langchain_openai")
+            from langchain_openai import ChatOpenAI
 
-            llm = ChatDashScope(**kwargs)
+            llm = ChatOpenAI(openai_api_base='https://dashscope.aliyuncs.com/compatible-mode/v1',
+                     openai_api_key=os.environ["DASHSCOPE_API_KEY"],
+                     **kwargs
+                )
         elif provider == "xai":
             _check_pkg("langchain_xai")
             from langchain_xai import ChatXAI
@@ -209,6 +220,7 @@ class GenericLLMProvider:
             )
 
             llm = ChatOpenAI(openai_api_base='https://openrouter.ai/api/v1',
+                     request_timeout=180,
                      openai_api_key=os.environ["OPENROUTER_API_KEY"],
                      rate_limiter=rate_limiter,
                      **kwargs
@@ -229,6 +241,11 @@ class GenericLLMProvider:
                              openai_api_key=os.environ["AIMLAPI_API_KEY"],
                              **kwargs
                              )
+        elif provider == 'netmind':
+            _check_pkg("langchain_netmind")
+            from langchain_netmind import ChatNetmind
+
+            llm = ChatNetmind(**kwargs)
         else:
             supported = ", ".join(_SUPPORTED_PROVIDERS)
             raise ValueError(

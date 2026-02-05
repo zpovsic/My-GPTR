@@ -6,12 +6,14 @@
 
 [![Website](https://img.shields.io/badge/Official%20Website-gptr.dev-teal?style=for-the-badge&logo=world&logoColor=white&color=0891b2)](https://gptr.dev)
 [![Documentation](https://img.shields.io/badge/Documentation-DOCS-f472b6?logo=googledocs&logoColor=white&style=for-the-badge)](https://docs.gptr.dev)
-[![Discord Follow](https://dcbadge.vercel.app/api/server/QgZXvJAccX?style=for-the-badge&theme=clean-inverted&?compact=true)](https://discord.gg/QgZXvJAccX)
+[![Discord](https://img.shields.io/discord/1127851779011391548?logo=discord&logoColor=white&label=Discord&color=34b76a&style=for-the-badge)](https://discord.gg/QgZXvJAccX)
+
 
 [![PyPI version](https://img.shields.io/pypi/v/gpt-researcher?logo=pypi&logoColor=white&style=flat)](https://badge.fury.io/py/gpt-researcher)
 ![GitHub Release](https://img.shields.io/github/v/release/assafelovic/gpt-researcher?style=flat&logo=github)
 [![Open In Colab](https://img.shields.io/static/v1?message=Open%20in%20Colab&logo=googlecolab&labelColor=grey&color=yellow&label=%20&style=flat&logoSize=40)](https://colab.research.google.com/github/assafelovic/gpt-researcher/blob/master/docs/docs/examples/pip-run.ipynb)
 [![Docker Image Version](https://img.shields.io/docker/v/elestio/gpt-researcher/latest?arch=amd64&style=flat&logo=docker&logoColor=white&color=1D63ED)](https://hub.docker.com/r/gptresearcher/gpt-researcher)
+[![Skill](https://img.shields.io/badge/Claude%20Skill-skills.sh-blueviolet?style=flat&logo=anthropic&logoColor=white)](https://skills.sh/assafelovic/gpt-researcher/gpt-researcher)
 [![Twitter Follow](https://img.shields.io/twitter/follow/assaf_elovic?style=social)](https://twitter.com/assaf_elovic)
 
 [English](README.md) | [中文](README-zh_CN.md) | [日本語](README-ja_JP.md) | [한국어](README-ko_KR.md)
@@ -35,9 +37,19 @@ The agent produces detailed, factual, and unbiased research reports with citatio
 - Selective web sources can introduce bias into research tasks.
 
 ## Demo
-https://github.com/user-attachments/assets/8fcaaa4c-31e5-4814-89b4-94f1433d139d
+<a href="https://www.youtube.com/watch?v=f60rlc_QCxE" target="_blank" rel="noopener">
+  <img src="https://github.com/user-attachments/assets/ac2ec55f-b487-4b3f-ae6f-b8743ad296e4" alt="Demo video" width="800" target="_blank" />
+</a>
 
+## Install as Claude Skill
 
+Extend Claude's deep research capabilities by installing GPT Researcher as a [Claude Skill](https://skills.sh/assafelovic/gpt-researcher/gpt-researcher):
+
+```bash
+npx skills add assafelovic/gpt-researcher
+```
+
+Once installed, Claude can leverage GPT Researcher's deep research capabilities directly within your conversations.
 
 ## Architecture
 
@@ -63,6 +75,7 @@ Steps:
 
 - 📝 Generate detailed research reports using web and local documents.
 - 🖼️ Smart image scraping and filtering for reports.
+- 🍌 **AI-generated inline images** using Google Gemini (Nano Banana) for visual illustrations.
 - 📜 Generate detailed reports exceeding 2,000 words.
 - 🌐 Aggregate over 20 sources for objective conclusions.
 - 🖥️ Frontend available in lightweight (HTML/CSS/JS) and production-ready (NextJS + Tailwind) versions.
@@ -70,21 +83,9 @@ Steps:
 - 📂 Maintains memory and context throughout research.
 - 📄 Export reports to PDF, Word, and other formats.
 
-## ✨ Deep Research
-
-GPT Researcher now includes Deep Research - an advanced recursive research workflow that explores topics with agentic depth and breadth. This feature employs a tree-like exploration pattern, diving deeper into subtopics while maintaining a comprehensive view of the research subject.
-
-- 🌳 Tree-like exploration with configurable depth and breadth
-- ⚡️ Concurrent processing for faster results
-- 🤝 Smart context management across research branches
-- ⏱️ Takes ~5 minutes per deep research
-- 💰 Costs ~$0.4 per research (using `o3-mini` on "high" reasoning effort)
-
-[Learn more about Deep Research](https://docs.gptr.dev/docs/gpt-researcher/gptr/deep_research) in our documentation.
-
 ## 📖 Documentation
 
-See the [Documentation](https://docs.gptr.dev/docs/gpt-researcher/getting-started/getting-started) for:
+See the [Documentation](https://docs.gptr.dev/docs/gpt-researcher/getting-started) for:
 - Installation and setup guides
 - Configuration and customization options
 - How-To examples
@@ -109,6 +110,19 @@ See the [Documentation](https://docs.gptr.dev/docs/gpt-researcher/getting-starte
     export TAVILY_API_KEY={Your Tavily API Key here}
     ```
 
+    (Optional) For enhanced tracing and observability, you can also set:
+    
+    ```bash
+    # export LANGCHAIN_TRACING_V2=true
+    # export LANGCHAIN_API_KEY={Your LangChain API Key here}
+    ```
+
+    For custom OpenAI-compatible APIs (e.g., local models, other providers), you can also set:
+    
+    ```bash
+    export OPENAI_BASE_URL={Your custom API base URL here}
+    ```
+
 4. Install dependencies and start the server:
 
     ```bash
@@ -118,7 +132,7 @@ See the [Documentation](https://docs.gptr.dev/docs/gpt-researcher/getting-starte
 
 Visit [http://localhost:8000](http://localhost:8000) to start.
 
-For other setups (e.g., Poetry or virtual environments), check the [Getting Started page](https://docs.gptr.dev/docs/gpt-researcher/getting-started/getting-started).
+For other setups (e.g., Poetry or virtual environments), check the [Getting Started page](https://docs.gptr.dev/docs/gpt-researcher/getting-started).
 
 ## Run as PIP package
 ```bash
@@ -131,7 +145,7 @@ pip install gpt-researcher
 from gpt_researcher import GPTResearcher
 
 query = "why is Nvidia stock going up?"
-researcher = GPTResearcher(query=query, report_type="research_report")
+researcher = GPTResearcher(query=query)
 # Conduct research on the given query
 research_result = await researcher.conduct_research()
 # Write the report
@@ -141,6 +155,72 @@ report = await researcher.write_report()
 
 **For more examples and configurations, please refer to the [PIP documentation](https://docs.gptr.dev/docs/gpt-researcher/gptr/pip-package) page.**
 
+### 🔧 MCP Client
+GPT Researcher supports MCP integration to connect with specialized data sources like GitHub repositories, databases, and custom APIs. This enables research from data sources alongside web search.
+
+```bash
+export RETRIEVER=tavily,mcp  # Enable hybrid web + MCP research
+```
+
+```python
+from gpt_researcher import GPTResearcher
+import asyncio
+import os
+
+async def mcp_research_example():
+    # Enable MCP with web search
+    os.environ["RETRIEVER"] = "tavily,mcp"
+    
+    researcher = GPTResearcher(
+        query="What are the top open source web research agents?",
+        mcp_configs=[
+            {
+                "name": "github",
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-github"],
+                "env": {"GITHUB_TOKEN": os.getenv("GITHUB_TOKEN")}
+            }
+        ]
+    )
+    
+    research_result = await researcher.conduct_research()
+    report = await researcher.write_report()
+    return report
+```
+
+> For comprehensive MCP documentation and advanced examples, visit the [MCP Integration Guide](https://docs.gptr.dev/docs/gpt-researcher/retrievers/mcp-configs).
+
+## 🍌 Inline Image Generation
+
+GPT Researcher can automatically generate and embed AI-created illustrations in your research reports using Google's Gemini models (Nano Banana).
+
+```bash
+# Enable in your .env file
+IMAGE_GENERATION_ENABLED=true
+GOOGLE_API_KEY=your_google_api_key
+IMAGE_GENERATION_MODEL=models/gemini-2.5-flash-image
+```
+
+When enabled, the system will:
+1. Analyze your research context to identify visualization opportunities
+2. Pre-generate 2-3 relevant images during the research phase
+3. Embed them inline as the report is written
+
+Images are generated with dark-mode styling that matches the GPT Researcher UI, featuring professional infographic aesthetics with teal accents.
+
+[Learn more about Image Generation](https://docs.gptr.dev/docs/gpt-researcher/gptr/image_generation) in our documentation.
+
+## ✨ Deep Research
+
+GPT Researcher now includes Deep Research - an advanced recursive research workflow that explores topics with agentic depth and breadth. This feature employs a tree-like exploration pattern, diving deeper into subtopics while maintaining a comprehensive view of the research subject.
+
+- 🌳 Tree-like exploration with configurable depth and breadth
+- ⚡️ Concurrent processing for faster results
+- 🤝 Smart context management across research branches
+- ⏱️ Takes ~5 minutes per deep research
+- 💰 Costs ~$0.4 per research (using `o3-mini` on "high" reasoning effort)
+
+[Learn more about Deep Research](https://docs.gptr.dev/docs/gpt-researcher/gptr/deep_research) in our documentation.
 
 ## Run with Docker
 
@@ -204,6 +284,19 @@ By using LangGraph, the research process can be significantly improved in depth 
 An average run generates a 5-6 page research report in multiple formats such as PDF, Docx and Markdown.
 
 Check it out [here](https://github.com/assafelovic/gpt-researcher/tree/master/multi_agents) or head over to our [documentation](https://docs.gptr.dev/docs/gpt-researcher/multi_agents/langgraph) for more information.
+
+## 🔍 Observability
+
+GPT Researcher supports **LangSmith** for enhanced tracing and observability, making it easier to debug and optimize complex multi-agent workflows.
+
+To enable tracing:
+1. Set the following environment variables:
+   ```bash
+   export LANGCHAIN_TRACING_V2=true
+   export LANGCHAIN_API_KEY=your_api_key
+   export LANGCHAIN_PROJECT="gpt-researcher"
+   ```
+2. Run your research tasks as usual. All LangGraph-based agent interactions will be automatically traced and visualized in your LangSmith dashboard.
 
 ## 🖥️ Frontend Applications
 

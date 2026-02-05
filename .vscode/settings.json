@@ -14,6 +14,7 @@
 	"terminal.integrated.fontFamily": "Consolas",
 	"terminal.integrated.fontWeight": "400",
 	"explorer.experimental.fileNesting.expand": false,
+	"python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
 	"[Log]": {
 		"editor.fontSize": 14
 	},

@@ -34,8 +34,11 @@
       items: [
         'gpt-researcher/gptr/pip-package',
         'gpt-researcher/gptr/npm-package',
+        'gpt-researcher/gptr/claude-skill',
         'gpt-researcher/gptr/example',
         'gpt-researcher/gptr/deep_research',
+        'gpt-researcher/gptr/image_generation',
+        'gpt-researcher/gptr/ai-development',
         'gpt-researcher/gptr/config',
         'gpt-researcher/gptr/scraping',
         'gpt-researcher/gptr/querying-the-backend',
@@ -98,12 +101,13 @@
     },
     {
       type: 'category',
-      label: 'Search Engines',
+      label: 'Retrievers',
       collapsible: true,
       collapsed: true,
       items: [
-        'gpt-researcher/search-engines/retrievers',
-        'gpt-researcher/search-engines/test-your-retriever'
+        'gpt-researcher/search-engines/search-engines',
+        'gpt-researcher/retrievers/mcp-configs',
+        'gpt-researcher/search-engines/test-your-retriever',
         ]
     },
     {
