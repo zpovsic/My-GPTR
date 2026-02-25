@@ -1,12 +1,13 @@
 {
   "query": "Is AI in a hype cycle?",
   "max_sections": 3,
+  "max_revisions": 3,
   "publish_formats": {
     "markdown": true,
     "pdf": true,
     "docx": true
   },
-  "include_human_feedback": false,
+  "include_human_feedback": true,
   "follow_guidelines": false,
   "model": "gpt-5.2",
   "guidelines": [
