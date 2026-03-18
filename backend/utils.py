@@ -32,7 +32,11 @@ async def write_text_to_md(text: str, filename: str = "") -> str:
         str: The file path of the generated Markdown file.
     """
     file_path = f"outputs/{filename[:60]}.md"
-    await write_to_file(file_path, text)
+    # Convert absolute server image paths to relative paths for local viewing.
+    # The .md file lives in outputs/, so /outputs/images/... becomes images/...
+    import re
+    local_text = re.sub(r'!\[([^\]]*)\]\(/outputs/', r'![\1](', text)
+    await write_to_file(file_path, local_text)
     return urllib.parse.quote(file_path)
 
 
