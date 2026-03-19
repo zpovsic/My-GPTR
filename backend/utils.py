@@ -41,12 +41,13 @@ async def write_text_to_md(text: str, filename: str = "") -> str:
 
 
 def _preprocess_images_for_pdf(text: str) -> str:
-    """Convert web image URLs to absolute file paths for PDF generation.
+    """Convert web image URLs to file:// URIs for PDF generation.
 
-    Transforms /outputs/images/... URLs to absolute file:// paths that
-    weasyprint can resolve.
+    Transforms /outputs/images/... URLs to file:// URIs that
+    weasyprint can resolve on all platforms (including Windows).
     """
     import re
+    from pathlib import Path
 
     base_path = os.path.abspath(".")
 
@@ -55,10 +56,11 @@ def _preprocess_images_for_pdf(text: str) -> str:
         alt_text = match.group(1)
         url = match.group(2)
 
-        # Convert /outputs/... to absolute path
+        # Convert /outputs/... to file:// URI
         if url.startswith("/outputs/"):
             abs_path = os.path.join(base_path, url.lstrip("/"))
-            return f"![{alt_text}]({abs_path})"
+            file_uri = Path(abs_path).as_uri()
+            return f"![{alt_text}]({file_uri})"
         return match.group(0)
 
     # Match ![alt text](/outputs/images/...)
@@ -103,6 +105,35 @@ async def write_md_to_pdf(text: str, filename: str = "") -> str:
     return encoded_file_path
 
 
+def _preprocess_images_for_docx(html: str) -> str:
+    """Convert local image paths in HTML to base64 data URIs for DOCX generation.
+
+    htmldocx cannot resolve server-relative /outputs/... paths, so we
+    read the local image files and embed them as base64 data URIs.
+    """
+    import re
+    import base64
+    from pathlib import Path
+
+    base_path = Path(os.path.abspath("."))
+
+    def replace_src(match):
+        src = match.group(1)
+        file_path = base_path / src.lstrip("/")
+        if file_path.exists():
+            try:
+                img_data = file_path.read_bytes()
+                b64 = base64.b64encode(img_data).decode('utf-8')
+                ext = file_path.suffix.lower()
+                mime = 'image/png' if ext == '.png' else 'image/jpeg'
+                return f'src="data:{mime};base64,{b64}"'
+            except Exception:
+                pass
+        return match.group(0)
+
+    return re.sub(r'src="(/outputs/[^"]+)"', replace_src, html)
+
+
 async def write_md_to_word(text: str, filename: str = "") -> str:
     """Converts Markdown text to a DOCX file and returns the file path.
 
@@ -119,6 +150,8 @@ async def write_md_to_word(text: str, filename: str = "") -> str:
         from htmldocx import HtmlToDocx
         # Convert report markdown to HTML
         html = mistune.html(text)
+        # Embed local images as base64 data URIs so htmldocx can include them
+        html = _preprocess_images_for_docx(html)
         # Create a document object
         doc = Document()
         # Convert the html generated from the report to document format
