@@ -91,11 +91,22 @@ async def write_md_to_pdf(text: str, filename: str = "") -> str:
         # Set base_url to current directory for resolving any remaining relative paths
         base_url = os.path.abspath(".")
 
-        from md2pdf.core import md2pdf
-        md2pdf(file_path,
-               raw=processed_text,
-               css=css_path,
-               base_url=base_url)
+        # Convert markdown to HTML, then wrap in a full HTML document so
+        # weasyprint can properly constrain images within the page area.
+        import markdown as md_lib
+        from weasyprint import HTML, CSS
+
+        raw_html = md_lib.markdown(
+            processed_text,
+            extensions=["extra", "codehilite", "smarty", "sane_lists"],
+        )
+        full_html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body>{raw_html}</body></html>"""
+
+        html_doc = HTML(string=full_html, base_url=base_url)
+        styles = [CSS(filename=css_path)]
+        html_doc.write_pdf(file_path, stylesheets=styles)
         print(f"Report written to {file_path}")
     except Exception as e:
         print(f"Error in converting Markdown to PDF: {e}")

@@ -1,37 +1,50 @@
-from server.report_store import ReportStore
-from chat.chat import ChatAgentWithMemory
-from gpt_researcher.utils.enum import Tone
-from utils import write_md_to_word, write_md_to_pdf
-from server.websocket_manager import run_agent
-from server.server_utils import (
-    get_config_dict, sanitize_filename,
-    update_environment_variables, handle_file_upload, handle_file_deletion,
-    execute_multi_agents, handle_websocket_communication
-)
-from server.websocket_manager import WebSocketManager
-from pydantic import BaseModel, ConfigDict
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, File, UploadFile, BackgroundTasks, HTTPException
 import json
-import os
-from typing import Dict, List, Any
-import time
 import logging
+import os
 import sys
+import time
 import warnings
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any, Dict, List
+
+# Add the parent directory to sys.path to make sure we can import from server
+# NOTE: This MUST run before any local imports below (server.*, chat.*, utils.*)
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 # Suppress Pydantic V2 migration warnings
 warnings.filterwarnings(
     "ignore", message="Valid config keys have changed in V2")
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
-
-# Add the parent directory to sys.path to make sure we can import from server
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+from chat.chat import ChatAgentWithMemory  # noqa: E402
+from fastapi import (  # noqa: E402
+    BackgroundTasks,
+    FastAPI,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from gpt_researcher.utils.enum import Tone  # noqa: E402
+from pydantic import BaseModel, ConfigDict  # noqa: E402
+from server.report_store import ReportStore  # noqa: E402
+from server.server_utils import (  # noqa: E402
+    execute_multi_agents,
+    get_config_dict,
+    handle_file_deletion,
+    handle_file_upload,
+    handle_websocket_communication,
+    sanitize_filename,
+    update_environment_variables,
+)
+from server.websocket_manager import WebSocketManager, run_agent  # noqa: E402
+from utils import write_md_to_pdf, write_md_to_word  # noqa: E402
 
 
 # MongoDB services removed - no database persistence needed
