@@ -1,20 +1,22 @@
+import os
 import asyncio
 import datetime
 import json
 import logging
-import traceback
 import os
-
+import traceback
 from typing import Dict, List
+
 from fastapi import WebSocket
-from report_type import BasicReport, DetailedReport
+
+from backend.report_type import BasicReport, DetailedReport
+
 from gpt_researcher.utils.enum import ReportType, Tone
 from gpt_researcher.actions import stream_output  # Import stream_output
 from .multi_agent_runner import run_multi_agent_task
 from .server_utils import CustomLogsHandler
 
 logger = logging.getLogger(__name__)
-
 
 class WebSocketManager:
     """Manage websockets"""
@@ -36,7 +38,7 @@ class WebSocketManager:
                 message = await queue.get()
                 if message is None:  # Shutdown signal
                     break
-
+                    
                 if websocket in self.active_connections:
                     if message == "ping":
                         await websocket.send_text("pong")
@@ -66,7 +68,7 @@ class WebSocketManager:
         try:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
-
+                
                 # Cancel sender task if it exists
                 if websocket in self.sender_tasks:
                     try:
@@ -78,11 +80,11 @@ class WebSocketManager:
                         # Always try to clean up regardless of errors
                         if websocket in self.sender_tasks:
                             del self.sender_tasks[websocket]
-
+                
                 # Clean up message queue
                 if websocket in self.message_queues:
                     del self.message_queues[websocket]
-
+                
                 # Finally close the WebSocket
                 try:
                     await websocket.close()
@@ -104,32 +106,24 @@ class WebSocketManager:
 
         # Pass MCP parameters to run_agent
         report = await run_agent(
-            task, report_type, report_source, source_urls, document_urls, tone, websocket,
+            task, report_type, report_source, source_urls, document_urls, tone, websocket, 
             headers=headers, query_domains=query_domains, config_path=config_path,
             mcp_enabled=mcp_enabled, mcp_strategy=mcp_strategy, mcp_configs=mcp_configs,
             max_search_results=max_search_results
         )
         return report
 
-
 async def run_agent(task, report_type, report_source, source_urls, document_urls, tone: Tone, websocket, stream_output=stream_output, headers=None, query_domains=[], config_path="", return_researcher=False, mcp_enabled=False, mcp_strategy="fast", mcp_configs=[], max_search_results=None):
-    """Run the agent."""
+    """Run the agent."""    
     # Create logs handler for this research task
     logs_handler = CustomLogsHandler(websocket, task)
 
-    # Set up MCP configuration if enabled
+    # Log MCP initialization. Retriever and strategy are configured per-request
+    # inside GPTResearcher via mcp_configs/mcp_strategy params — no os.environ
+    # mutation needed here (mutating os.environ would persist across requests and
+    # affect unrelated sessions, see issue #1676).
     if mcp_enabled and mcp_configs:
-        import os
-        current_retriever = os.getenv("RETRIEVER", "tavily")
-        if "mcp" not in current_retriever:
-            # Add MCP to existing retrievers
-            os.environ["RETRIEVER"] = f"{current_retriever},mcp"
-
-        # Set MCP strategy
-        os.environ["MCP_STRATEGY"] = mcp_strategy
-
-        print(
-            f"🔧 MCP enabled with strategy '{mcp_strategy}' and {len(mcp_configs)} server(s)")
+        print(f"🔧 MCP enabled with strategy '{mcp_strategy}' and {len(mcp_configs)} server(s)")
         await logs_handler.send_json({
             "type": "logs",
             "content": "mcp_init",
@@ -139,10 +133,10 @@ async def run_agent(task, report_type, report_source, source_urls, document_urls
     # Initialize researcher based on report type
     if report_type == "multi_agents":
         report = await run_multi_agent_task(
-            query=task,
+            query=task, 
             websocket=logs_handler,  # Use logs_handler instead of raw websocket
-            stream_output=stream_output,
-            tone=tone,
+            stream_output=stream_output, 
+            tone=tone, 
             headers=headers
         )
         report = report.get("report", "")
@@ -164,7 +158,7 @@ async def run_agent(task, report_type, report_source, source_urls, document_urls
             max_search_results=max_search_results,
         )
         report = await researcher.run()
-
+        
     else:
         researcher = BasicReport(
             query=task,

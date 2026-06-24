@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 import logging
 from pathlib import Path
+import uvicorn
+
+from backend.server.app import app
 
 # Create logs directory if it doesn't exist
 logs_dir = Path("logs")
@@ -27,8 +30,6 @@ logging.getLogger('fontTools.ttLib').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-from backend.server.app import app
 
 if __name__ == "__main__":
     import uvicorn

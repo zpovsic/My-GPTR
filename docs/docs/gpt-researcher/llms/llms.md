@@ -3,13 +3,19 @@
 As described in the [introduction](/docs/gpt-researcher/gptr/config), the default LLM and embedding is OpenAI due to its superior performance and speed. 
 With that said, GPT Researcher supports various open/closed source LLMs and embeddings, and you can easily switch between them by updating the `SMART_LLM`, `FAST_LLM` and `EMBEDDING` env variables. You might also need to include the provider API key and corresponding configuration params.
 
-Current supported LLMs are `openai`, `anthropic`, `azure_openai`, `cohere`, `google_vertexai`, `google_genai`, `fireworks`, `ollama`, `together`, `mistralai`, `huggingface`, `groq`, `bedrock` and `litellm`.
+Current supported LLMs are `openai`, `anthropic`, `azure_openai`, `cohere`, `google_vertexai`, `google_genai`, `fireworks`, `ollama`, `together`, `mistralai`, `huggingface`, `groq`, `bedrock`, `litellm`, `minimax` and `atlascloud`.
 
 Current supported embeddings are `openai`, `azure_openai`, `cohere`, `google_vertexai`, `google_genai`, `fireworks`, `ollama`, `together`, `mistralai`, `huggingface`, `nomic` ,`voyageai` and `bedrock`.
 
 To learn more about support customization options see [here](/docs/gpt-researcher/gptr/config).
 
 **Please note**: GPT Researcher is optimized and heavily tested on GPT models. Some other models might run into context limit errors, and unexpected responses.
+> **Token limits**: Modern long-output models (Claude 4.x, GPT-5)
+> require raising `SMART_TOKEN_LIMIT` and related variables above
+> their defaults to avoid truncated reports. See
+> [config documentation](../gptr/config#recommended-values-for-modern-long-output-models)
+> for recommended values.
+
 Please provide any feedback in our [Discord community](https://discord.gg/QgZXvJAccX) channel, so we can better improve the experience and performance.
 
 Below you can find examples for how to configure the various supported LLMs.
@@ -347,7 +353,7 @@ OPENAI_BASE_URL=https://openrouter.ai/api/v1
 FAST_LLM=openrouter:google/gemini-2.0-flash-lite-001
 SMART_LLM=openrouter:google/gemini-2.0-flash-001
 STRATEGIC_LLM=openrouter:google/gemini-2.5-pro-exp-03-25
-OPENROUTER_LIMIT_RPS=1  # Ratelimit request per secound
+OPENROUTER_LIMIT_RPS=1  # Ratelimit request per second
 EMBEDDING=google_genai:models/text-embedding-004 # openrouter doesn't support embedding models, use google instead its free
 GOOGLE_API_KEY=[Your *google gemini* key]
 ```
@@ -379,6 +385,27 @@ STRATEGIC_LLM="aimlapi:x-ai/grok-3-mini-beta"
 EMBEDDING="aimlapi:text-embedding-3-small"
 ```
 
+## MiniMax
+
+[MiniMax](https://www.minimaxi.com) offers powerful large language models with an OpenAI-compatible API. The latest MiniMax-M2.7 features improved reasoning and competitive pricing.
+
+Sign up at [minimaxi.com](https://www.minimaxi.com) to get an API key, then set the following environment variables:
+
+```env
+MINIMAX_API_KEY=[Your Key]
+FAST_LLM=minimax:MiniMax-M2.7-highspeed
+SMART_LLM=minimax:MiniMax-M2.7
+STRATEGIC_LLM=minimax:MiniMax-M2.7
+
+EMBEDDING=minimax:embo-01
+```
+
+Available models:
+- `MiniMax-M2.7` — latest flagship model with improved reasoning
+- `MiniMax-M2.7-highspeed` — optimized for speed
+- `MiniMax-M2.5` — 204K context, general-purpose model
+- `MiniMax-M2.5-highspeed` — 204K context, optimized for speed
+
 ## Avian
 
 [Avian](https://avian.io) provides an OpenAI-compatible API with access to cost-effective frontier models including DeepSeek-V3.2, Kimi-K2.5, GLM-5, and MiniMax-M2.5.
@@ -397,6 +424,19 @@ Available models:
 - `moonshotai/kimi-k2.5` — 131K context, $0.45/$2.20 per 1M tokens
 - `z-ai/glm-5` — 131K context, $0.30/$2.55 per 1M tokens
 - `minimax/minimax-m2.5` — 1M context, $0.30/$1.10 per 1M tokens
+
+## Atlas Cloud
+
+[Atlas Cloud](https://www.atlascloud.ai) provides an OpenAI-compatible API with access to 300+ models (including DeepSeek, Llama, Qwen, and more) at competitive prices.
+
+Sign up at [atlascloud.ai](https://www.atlascloud.ai) to get an API key, then set the following environment variables:
+
+```env
+ATLASCLOUD_API_KEY=[Your Key]
+FAST_LLM=atlascloud:deepseek-ai/DeepSeek-V3
+SMART_LLM=atlascloud:deepseek-ai/DeepSeek-R1
+STRATEGIC_LLM=atlascloud:deepseek-ai/DeepSeek-R1
+```
 
 ## vLLM
 ```env

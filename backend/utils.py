@@ -3,7 +3,6 @@ import urllib
 import mistune
 import os
 
-
 async def write_to_file(filename: str, text: str) -> None:
     """Asynchronously write text to a file in UTF-8 encoding.
 
@@ -21,7 +20,6 @@ async def write_to_file(filename: str, text: str) -> None:
     async with aiofiles.open(filename, "w", encoding='utf-8') as file:
         await file.write(text_utf8)
 
-
 async def write_text_to_md(text: str, filename: str = "") -> str:
     """Writes text to a Markdown file and returns the file path.
 
@@ -32,37 +30,30 @@ async def write_text_to_md(text: str, filename: str = "") -> str:
         str: The file path of the generated Markdown file.
     """
     file_path = f"outputs/{filename[:60]}.md"
-    # Convert absolute server image paths to relative paths for local viewing.
-    # The .md file lives in outputs/, so /outputs/images/... becomes images/...
-    import re
-    local_text = re.sub(r'!\[([^\]]*)\]\(/outputs/', r'![\1](', text)
-    await write_to_file(file_path, local_text)
+    await write_to_file(file_path, text)
     return urllib.parse.quote(file_path)
 
-
 def _preprocess_images_for_pdf(text: str) -> str:
-    """Convert web image URLs to file:// URIs for PDF generation.
-
-    Transforms /outputs/images/... URLs to file:// URIs that
-    weasyprint can resolve on all platforms (including Windows).
+    """Convert web image URLs to absolute file paths for PDF generation.
+    
+    Transforms /outputs/images/... URLs to absolute file:// paths that
+    weasyprint can resolve.
     """
     import re
-    from pathlib import Path
-
+    
     base_path = os.path.abspath(".")
-
+    
     # Pattern to find markdown images with /outputs/ URLs
     def replace_image_url(match):
         alt_text = match.group(1)
         url = match.group(2)
-
-        # Convert /outputs/... to file:// URI
+        
+        # Convert /outputs/... to absolute path
         if url.startswith("/outputs/"):
             abs_path = os.path.join(base_path, url.lstrip("/"))
-            file_uri = Path(abs_path).as_uri()
-            return f"![{alt_text}]({file_uri})"
+            return f"![{alt_text}]({abs_path})"
         return match.group(0)
-
+    
     # Match ![alt text](/outputs/images/...)
     pattern = r'!\[([^\]]*)\]\((/outputs/[^)]+)\)'
     return re.sub(pattern, replace_image_url, text)
@@ -84,29 +75,19 @@ async def write_md_to_pdf(text: str, filename: str = "") -> str:
         # dependency on the current working directory.
         current_dir = os.path.dirname(os.path.abspath(__file__))
         css_path = os.path.join(current_dir, "styles", "pdf_styles.css")
-
+        
         # Preprocess image URLs for PDF compatibility
         processed_text = _preprocess_images_for_pdf(text)
-
+        
         # Set base_url to current directory for resolving any remaining relative paths
         base_url = os.path.abspath(".")
-
-        # Convert markdown to HTML, then wrap in a full HTML document so
-        # weasyprint can properly constrain images within the page area.
-        import markdown as md_lib
-        from weasyprint import HTML, CSS
-
-        raw_html = md_lib.markdown(
-            processed_text,
-            extensions=["extra", "codehilite", "smarty", "sane_lists"],
-        )
-        full_html = f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body>{raw_html}</body></html>"""
-
-        html_doc = HTML(string=full_html, base_url=base_url)
-        styles = [CSS(filename=css_path)]
-        html_doc.write_pdf(file_path, stylesheets=styles)
+        from md2pdf.core import md2pdf
+        md2pdf(
+               file_path,
+               raw=processed_text,
+               css=css_path,
+               base_url=base_url,
+            )
         print(f"Report written to {file_path}")
     except Exception as e:
         print(f"Error in converting Markdown to PDF: {e}")
@@ -114,36 +95,6 @@ async def write_md_to_pdf(text: str, filename: str = "") -> str:
 
     encoded_file_path = urllib.parse.quote(file_path)
     return encoded_file_path
-
-
-def _preprocess_images_for_docx(html: str) -> str:
-    """Convert local image paths in HTML to base64 data URIs for DOCX generation.
-
-    htmldocx cannot resolve server-relative /outputs/... paths, so we
-    read the local image files and embed them as base64 data URIs.
-    """
-    import re
-    import base64
-    from pathlib import Path
-
-    base_path = Path(os.path.abspath("."))
-
-    def replace_src(match):
-        src = match.group(1)
-        file_path = base_path / src.lstrip("/")
-        if file_path.exists():
-            try:
-                img_data = file_path.read_bytes()
-                b64 = base64.b64encode(img_data).decode('utf-8')
-                ext = file_path.suffix.lower()
-                mime = 'image/png' if ext == '.png' else 'image/jpeg'
-                return f'src="data:{mime};base64,{b64}"'
-            except Exception:
-                pass
-        return match.group(0)
-
-    return re.sub(r'src="(/outputs/[^"]+)"', replace_src, html)
-
 
 async def write_md_to_word(text: str, filename: str = "") -> str:
     """Converts Markdown text to a DOCX file and returns the file path.
@@ -161,8 +112,6 @@ async def write_md_to_word(text: str, filename: str = "") -> str:
         from htmldocx import HtmlToDocx
         # Convert report markdown to HTML
         html = mistune.html(text)
-        # Embed local images as base64 data URIs so htmldocx can include them
-        html = _preprocess_images_for_docx(html)
         # Create a document object
         doc = Document()
         # Convert the html generated from the report to document format

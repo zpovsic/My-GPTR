@@ -1,51 +1,40 @@
 import json
-import logging
 import os
-import sys
+from typing import Dict, List, Any
 import time
+import logging
+import sys
 import warnings
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List
-
-# Add the parent directory to sys.path to make sure we can import from server
-# NOTE: This MUST run before any local imports below (server.*, chat.*, utils.*)
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 # Suppress Pydantic V2 migration warnings
-warnings.filterwarnings(
-    "ignore", message="Valid config keys have changed in V2")
+warnings.filterwarnings("ignore", message="Valid config keys have changed in V2")
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
-from chat.chat import ChatAgentWithMemory  # noqa: E402
-from fastapi import (  # noqa: E402
-    BackgroundTasks,
-    FastAPI,
-    File,
-    HTTPException,
-    Request,
-    UploadFile,
-    WebSocket,
-    WebSocketDisconnect,
-)
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse  # noqa: E402
-from fastapi.staticfiles import StaticFiles  # noqa: E402
-from gpt_researcher.utils.enum import Tone  # noqa: E402
-from pydantic import BaseModel, ConfigDict  # noqa: E402
-from server.report_store import ReportStore  # noqa: E402
-from server.server_utils import (  # noqa: E402
-    execute_multi_agents,
-    get_config_dict,
-    handle_file_deletion,
-    handle_file_upload,
-    handle_websocket_communication,
-    sanitize_filename,
-    update_environment_variables,
-)
-from server.websocket_manager import WebSocketManager, run_agent  # noqa: E402
-from utils import write_md_to_pdf, write_md_to_word  # noqa: E402
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, File, UploadFile, BackgroundTasks, HTTPException
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from pydantic import BaseModel, ConfigDict
 
+# Add the parent directory to sys.path to make sure we can import from server
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+from server.websocket_manager import WebSocketManager
+from server.server_utils import (
+    get_config_dict, sanitize_filename,
+    update_environment_variables, handle_file_upload, handle_file_deletion,
+    execute_multi_agents, handle_websocket_communication
+)
+from server.agent_discovery import build_agent_discovery_document
+
+from server.websocket_manager import run_agent
+from utils import write_md_to_word, write_md_to_pdf
+from gpt_researcher.utils.enum import Tone
+from chat.chat import ChatAgentWithMemory
+
+from server.report_store import ReportStore
 
 # MongoDB services removed - no database persistence needed
 
@@ -73,9 +62,8 @@ class ResearchRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    # Allow extra fields in the request
-    model_config = ConfigDict(extra="allow")
-
+    model_config = ConfigDict(extra="allow")  # Allow extra fields in the request
+    
     report: str
     messages: List[Dict[str, Any]]
 
@@ -85,25 +73,22 @@ async def lifespan(app: FastAPI):
     # Startup
     os.makedirs("outputs", exist_ok=True)
     app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
-
+    
     # Mount frontend static files
-    frontend_path = os.path.join(os.path.dirname(
-        os.path.dirname(os.path.dirname(__file__))), "frontend")
+    frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
     if os.path.exists(frontend_path):
         app.mount("/site", StaticFiles(directory=frontend_path), name="frontend")
         logger.debug(f"Frontend mounted from: {frontend_path}")
-
+        
         # Also mount the static directory directly for assets referenced as /static/
         static_path = os.path.join(frontend_path, "static")
         if os.path.exists(static_path):
-            app.mount("/static", StaticFiles(directory=static_path),
-                      name="static")
+            app.mount("/static", StaticFiles(directory=static_path), name="static")
             logger.debug(f"Static assets mounted from: {static_path}")
     else:
         logger.warning(f"Frontend directory not found: {frontend_path}")
-
-    logger.info(
-        "GPT Researcher API ready - local mode (no database persistence)")
+    
+    logger.info("GPT Researcher API ready - local mode (no database persistence)")
     yield
     # Shutdown
     logger.info("Research API shutting down")
@@ -138,19 +123,16 @@ app.add_middleware(
 
 # Mount static files for frontend
 # Get the absolute path to the frontend directory
-frontend_dir = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "..", "frontend"))
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
 
 # Mount static directories
-app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir,
-          "static")), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "static")), name="static")
 app.mount("/site", StaticFiles(directory=frontend_dir), name="site")
 
 # WebSocket manager
 manager = WebSocketManager()
 
-report_store = ReportStore(
-    Path(os.getenv('REPORT_STORE_PATH', os.path.join('data', 'reports.json'))))
+report_store = ReportStore(Path(os.getenv('REPORT_STORE_PATH', os.path.join('data', 'reports.json'))))
 
 # Constants
 DOC_PATH = os.getenv("DOC_PATH", "./my-docs")
@@ -162,35 +144,32 @@ DOC_PATH = os.getenv("DOC_PATH", "./my-docs")
 
 
 # Routes
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    """Serve favicon from the frontend static directory."""
-    favicon_path = os.path.join(
-        os.path.dirname(
-            __file__), "..", "..", "frontend", "static", "favicon.ico"
-    )
-    favicon_path = os.path.abspath(favicon_path)
-    if os.path.exists(favicon_path):
-        return FileResponse(favicon_path)
-    return JSONResponse(status_code=404, content={"detail": "Not found"})
-
-
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     """Serve the main frontend HTML page."""
-    frontend_dir = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), "..", "..", "frontend"))
+    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
     index_path = os.path.join(frontend_dir, "index.html")
-
+    
     if not os.path.exists(index_path):
-        raise HTTPException(
-            status_code=404, detail="Frontend index.html not found")
-
+        raise HTTPException(status_code=404, detail="Frontend index.html not found")
+    
     with open(index_path, "r", encoding="utf-8") as f:
         content = f.read()
-
+    
     return HTMLResponse(content=content)
 
+
+@app.get("/.well-known/agent-discovery.json")
+async def agent_discovery(request: Request):
+    """Advertise GPT Researcher services via the Agent Discovery Protocol."""
+    origin = str(request.base_url).rstrip("/")
+    domain = request.url.hostname or request.headers.get("host", "")
+    contact = os.getenv("AGENT_DISCOVERY_CONTACT")
+
+    document = build_agent_discovery_document(origin=origin, domain=domain, contact=contact)
+    response = JSONResponse(content=document)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
 
 @app.get("/report/{research_id}")
 async def read_report(request: Request, research_id: str):
@@ -225,8 +204,7 @@ async def create_or_update_report(request: Request):
         now_ms = int(time.time() * 1000)
         existing = await report_store.get_report(research_id)
         incoming_timestamp = data.get("timestamp")
-        timestamp = incoming_timestamp if isinstance(
-            incoming_timestamp, int) else now_ms
+        timestamp = incoming_timestamp if isinstance(incoming_timestamp, int) else now_ms
         if existing and isinstance(existing.get("timestamp"), int):
             timestamp = max(timestamp, existing["timestamp"])
 
@@ -340,20 +318,16 @@ async def write_report(research_request: ResearchRequest, research_id: str = Non
             "pdf_path": pdf_path
         }
     else:
-        response = {"research_id": research_id, "report": "",
-                    "docx_path": docx_path, "pdf_path": pdf_path}
+        response = { "research_id": research_id, "report": "", "docx_path": docx_path, "pdf_path": pdf_path }
 
     return response
 
-
 @app.post("/report/")
 async def generate_report(research_request: ResearchRequest, background_tasks: BackgroundTasks):
-    research_id = sanitize_filename(
-        f"task_{int(time.time())}_{research_request.task}")
+    research_id = sanitize_filename(f"task_{int(time.time())}_{research_request.task}")
 
     if research_request.generate_in_background:
-        background_tasks.add_task(
-            write_report, research_request=research_request, research_id=research_id)
+        background_tasks.add_task(write_report, research_request=research_request, research_id=research_id)
         return {"message": "Your report is being generated in the background. Please check back later.",
                 "research_id": research_id}
     else:
@@ -392,14 +366,12 @@ async def websocket_endpoint(websocket: WebSocket):
         await handle_websocket_communication(websocket, manager)
     except WebSocketDisconnect as e:
         # Disconnect with more detailed logging about the WebSocket disconnect reason
-        logger.info(
-            f"WebSocket disconnected with code {e.code} and reason: '{e.reason}'")
+        logger.info(f"WebSocket disconnected with code {e.code} and reason: '{e.reason}'")
         await manager.disconnect(websocket)
     except Exception as e:
         # More general exception handling
         logger.error(f"Unexpected WebSocket error: {str(e)}")
         await manager.disconnect(websocket)
-
 
 @app.post("/api/chat")
 async def chat(chat_request: ChatRequest):
@@ -412,8 +384,7 @@ async def chat(chat_request: ChatRequest):
         JSON response with the assistant's message and any tool usage metadata
     """
     try:
-        logger.info(
-            f"Received chat request with {len(chat_request.messages)} messages")
+        logger.info(f"Received chat request with {len(chat_request.messages)} messages")
 
         # Create chat agent with the report
         chat_agent = ChatAgentWithMemory(
@@ -425,9 +396,8 @@ async def chat(chat_request: ChatRequest):
         # Process the chat and get response with metadata
         response_content, tool_calls_metadata = await chat_agent.chat(chat_request.messages, None)
         logger.info(f"response_content: {response_content}")
-        logger.info(
-            f"Got chat response of length: {len(response_content) if response_content else 0}")
-
+        logger.info(f"Got chat response of length: {len(response_content) if response_content else 0}")
+        
         if tool_calls_metadata:
             logger.info(f"Tool calls used: {json.dumps(tool_calls_metadata)}")
 
@@ -435,20 +405,17 @@ async def chat(chat_request: ChatRequest):
         response_message = {
             "role": "assistant",
             "content": response_content,
-            # Current time in milliseconds
-            "timestamp": int(time.time() * 1000),
+            "timestamp": int(time.time() * 1000),  # Current time in milliseconds
             "metadata": {
                 "tool_calls": tool_calls_metadata
             } if tool_calls_metadata else None
         }
 
-        logger.info(
-            f"Returning formatted response: {json.dumps(response_message)[:100]}...")
+        logger.info(f"Returning formatted response: {json.dumps(response_message)[:100]}...")
         return {"response": response_message}
     except Exception as e:
         logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
         return {"error": str(e)}
-
 
 @app.post("/api/reports/{research_id}/chat")
 async def research_report_chat(research_id: str, request: Request):
@@ -458,7 +425,7 @@ async def research_report_chat(research_id: str, request: Request):
     try:
         # Get raw JSON data from request
         data = await request.json()
-
+        
         # Create chat agent with the report
         chat_agent = ChatAgentWithMemory(
             report=data.get("report", ""),
@@ -468,7 +435,7 @@ async def research_report_chat(research_id: str, request: Request):
 
         # Process the chat and get response with metadata
         response_content, tool_calls_metadata = await chat_agent.chat(data.get("messages", []), None)
-
+        
         if tool_calls_metadata:
             logger.info(f"Tool calls used: {json.dumps(tool_calls_metadata)}")
 
@@ -487,18 +454,14 @@ async def research_report_chat(research_id: str, request: Request):
         logger.error(f"Error in research report chat: {str(e)}", exc_info=True)
         return {"error": str(e)}
 
-
 @app.put("/api/reports/{research_id}")
 async def update_report(research_id: str, request: Request):
     """Update a specific research report by ID - no database configured."""
-    logger.debug(
-        f"Update requested for report {research_id} - no database configured, not persisted")
+    logger.debug(f"Update requested for report {research_id} - no database configured, not persisted")
     return {"success": True, "id": research_id}
-
 
 @app.delete("/api/reports/{research_id}")
 async def delete_report(research_id: str):
     """Delete a specific research report by ID - no database configured."""
-    logger.debug(
-        f"Delete requested for report {research_id} - no database configured, nothing to delete")
+    logger.debug(f"Delete requested for report {research_id} - no database configured, nothing to delete")
     return {"success": True, "id": research_id}
