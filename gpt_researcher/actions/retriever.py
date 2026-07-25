@@ -33,6 +33,7 @@ def get_retriever(retriever: str):
         - custom: Custom user-defined retriever
         - mcp: Model Context Protocol retriever
         - xquik: Xquik X/Twitter search
+        - getxapi: GetXAPI X/Twitter search
     """
     match retriever:
         case "google":
@@ -115,6 +116,10 @@ def get_retriever(retriever: str):
             from gpt_researcher.retrievers import OpenAlexSearch
 
             return OpenAlexSearch
+        case "getxapi":
+            from gpt_researcher.retrievers import GetXAPISearch
+
+            return GetXAPISearch
 
         case _:
             return None
@@ -144,14 +149,17 @@ def get_retrievers(headers: dict[str, str], cfg):
             retrievers = cfg.retrievers.split(",")
         else:
             retrievers = cfg.retrievers
-        # Strip whitespace from each retriever name
-        retrievers = [r.strip() for r in retrievers]
     # If not found, check config for a single retriever
     elif cfg.retriever:
         retrievers = [cfg.retriever]
     # If still not set, use default retriever
     else:
         retrievers = [get_default_retriever().__name__]
+
+    # Strip whitespace from each retriever name so comma-separated lists with
+    # spaces (e.g. "tavily, exa" from a header or config) resolve correctly
+    # instead of silently falling back to the default retriever.
+    retrievers = [r.strip() for r in retrievers if r and r.strip()]
 
     # Convert retriever names to actual retriever classes
     # Use get_default_retriever() as a fallback for any invalid retriever names

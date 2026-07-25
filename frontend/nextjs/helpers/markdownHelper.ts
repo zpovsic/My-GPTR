@@ -49,7 +49,13 @@ export const markdownToHtml = async (markdown: Compatible | string): Promise<str
     // Apply fixes
     htmlString = fixListItemParagraphIssue(htmlString);
     htmlString = addTargetBlankToLinks(htmlString);
-    
+
+    // Sanitize the final HTML to prevent XSS. Report content is derived from
+    // untrusted sources (scraped web pages and LLM output) and is rendered via
+    // dangerouslySetInnerHTML, so it must be sanitized before being returned.
+    const DOMPurify = (await import('isomorphic-dompurify')).default;
+    htmlString = DOMPurify.sanitize(htmlString, { ADD_ATTR: ['target'] });
+
     return htmlString;
   } catch (error) {
     console.error('Error converting Markdown to HTML:', error);
