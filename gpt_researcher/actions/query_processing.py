@@ -1,7 +1,12 @@
 import json_repair
-from typing import Any, List, Dict
+import logging
+from typing import Any, Dict, List
 
 from gpt_researcher.llm_provider.generic.base import ReasoningEfforts
+
+from ..config import Config
+from ..prompts import PromptFamily
+from ..utils.llm import create_chat_completion
 
 
 def _normalize_sub_queries(parsed: Any, fallback_query: str) -> List[str]:
@@ -33,10 +38,6 @@ def _normalize_sub_queries(parsed: Any, fallback_query: str) -> List[str]:
     if not queries and fallback_query.strip():
         return [fallback_query.strip()]
     return queries
-from ..utils.llm import create_chat_completion
-from ..prompts import PromptFamily
-from ..config import Config
-import logging
 
 logger = logging.getLogger(__name__)
 
