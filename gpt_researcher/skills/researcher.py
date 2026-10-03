@@ -696,8 +696,10 @@ class ResearchConductor:
                     self.researcher.websocket,
                 )
             
-            # Execute the two-stage MCP search
-            results = retriever_instance.search(
+            # Execute the two-stage MCP search.
+            # Must be awaited on this loop: the sync search() blocks it while a second loop reuses
+            # langchain-openai's shared HTTP connections, which deadlocks the whole server. :-)
+            results = await retriever_instance.search_async(
                 max_results=self.researcher.cfg.max_search_results_per_query
             )
             
