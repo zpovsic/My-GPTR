@@ -9,9 +9,11 @@ if (-not (Test-Path $StartScript)) {
     throw "Start script not found at $StartScript"
 }
 
+# Headless conhost gives the server a console with no window. Plain "powershell -WindowStyle Hidden" is shown
+# in Windows Terminal when it is the default terminal, and closing that window kills the server. :-)
 $action = New-ScheduledTaskAction `
-    -Execute "powershell.exe" `
-    -Argument "-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"$StartScript`"" `
+    -Execute "conhost.exe" `
+    -Argument "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$StartScript`"" `
     -WorkingDirectory $ProjectRoot
 
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME

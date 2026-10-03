@@ -18,10 +18,15 @@ if (-not (Test-Path $LogsDir)) {
 
 $alreadyListening = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
 if ($alreadyListening) {
-    Add-Content -Path $LogFile -Value "$(Get-Date -Format o) Port 8000 already in use; skipping start."
+    Add-Content -Path $LogFile -Value "$(Get-Date -Format o) Port 8000 already in use; skipping start." -Encoding utf8
     exit 0
 }
 
-Add-Content -Path $LogFile -Value "$(Get-Date -Format o) Starting GPT Researcher server..."
+# Redirected output otherwise defaults to cp1252 and crashes on emoji in log messages. :-)
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
 
-& $Python -m uvicorn main:app --host 127.0.0.1 --port 8000 *>> $LogFile
+Add-Content -Path $LogFile -Value "$(Get-Date -Format o) Starting GPT Researcher server..." -Encoding utf8
+
+# cmd does the redirect so the log stays raw UTF-8 and stderr warnings are not turned into PowerShell errors. :-)
+& cmd.exe /c ".venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 >> logs\startup.log 2>&1"
