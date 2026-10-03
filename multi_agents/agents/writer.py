@@ -110,6 +110,11 @@ Headers Data: {headers}\n
             )
 
         research_layout_content = await self.write_sections(research_state)
+        if not isinstance(research_layout_content, dict):
+            raise RuntimeError(
+                "Writer got no usable introduction/conclusion from the LLM; "
+                "see the LLM warnings above for the underlying error."
+            )
 
         if research_state.get("task").get("verbose"):
             if self.websocket and self.stream_output:

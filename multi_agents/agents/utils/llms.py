@@ -21,6 +21,7 @@ async def call_model(
             model=model,
             messages=lc_messages,
             temperature=0,
+            max_tokens=cfg.smart_token_limit,
             llm_provider=cfg.smart_llm_provider,
             llm_kwargs=cfg.llm_kwargs,
             # cost_callback=cost_callback,
