@@ -8,6 +8,7 @@ import traceback
 from typing import Any
 from colorama import Fore, Style, init
 import os
+import re
 from enum import Enum
 
 _SUPPORTED_PROVIDERS = {
@@ -89,7 +90,25 @@ SUPPORT_REASONING_EFFORT_MODELS = [
     "gpt-5.5-pro",
 ]
 
+# GPT-5.x point releases and GPT-6+ are all reasoning models: they take reasoning_effort and reject any
+# temperature but the default, so new variants work without being listed one by one. :-)
+_GPT_REASONING_FAMILY = re.compile(r"^gpt-(5\.\d+|[6-9])")
+
+
+def supports_temperature(model: str | None) -> bool:
+    if not model:
+        return True
+    return model not in NO_SUPPORT_TEMPERATURE_MODELS and not _GPT_REASONING_FAMILY.match(model)
+
+
+def supports_reasoning_effort(model: str | None) -> bool:
+    if not model:
+        return False
+    return model in SUPPORT_REASONING_EFFORT_MODELS or bool(_GPT_REASONING_FAMILY.match(model))
+
+
 class ReasoningEfforts(Enum):
+    XHigh = "xhigh"
     High = "high"
     Medium = "medium"
     Low = "low"
