@@ -1,6 +1,6 @@
 <div align="center" id="top">
 
-<img src="https://github.com/assafelovic/gpt-researcher/assets/13554167/20af8286-b386-44a5-9a83-3be1365139c3" alt="Logo" width="80">
+<img src="https://raw.githubusercontent.com/assafelovic/gpt-researcher/main/docs/static/img/gptr-logo-tile.png" alt="GPT Researcher logo" width="80">
 
 ####
 
@@ -24,7 +24,7 @@
 
 **GPT Researcher — первый открытый агент глубокого исследования, рассчитанный и на веб, и на локальные источники по любой задаче.**
 
-Агент готовит подробные, фактические и непредвзятые исследовательские отчёты со ссылками. GPT Researcher даёт полный набор настроек, чтобы собирать специализированных агентов под конкретную предметную область. Вдохновлённый работами [Plan-and-Solve](https://arxiv.org/abs/2305.04091) и [RAG](https://arxiv.org/abs/2005.11401), проект снижает дезинформацию и повышает скорость, детерминизм и надёжность за счёт стабильной работы и параллелизации агентов.
+Агент готовит подробные, фактические и непредвзятые исследовательские отчёты со ссылками. GPT Researcher даёт полный набор настроек, чтобы собирать специализированных агентов под конкретную предметную область. GPT Researcher давно вышел за рамки RAG: агенты-планировщики и агенты-исполнители разбивают задачу на исследовательские вопросы, [модели принятия решений](https://docs.gptr.dev/docs/gpt-researcher/gptr/context-filter) оставляют только действительно полезный для ответа контекст, [мультиагентные](https://docs.gptr.dev/docs/gpt-researcher/multi_agents/langgraph) процессы координируют специализированных агентов от планирования до публикации, а [рекурсивное глубокое исследование](https://docs.gptr.dev/docs/gpt-researcher/gptr/deep_research) изучает тему вширь и вглубь. Исследование выполняется параллельно, поэтому оно быстрое, стабильное и надёжное и снижает дезинформацию.
 
 **Наша миссия — дать людям и организациям точную, непредвзятую и фактическую информацию с помощью ИИ.**
 
@@ -37,8 +37,11 @@
 - Выборочные источники могут вносить предвзятость в исследование.
 
 ## Демо
-<a href="https://www.youtube.com/watch?v=f60rlc_QCxE" target="_blank" rel="noopener">
-  <img src="https://github.com/user-attachments/assets/ac2ec55f-b487-4b3f-ae6f-b8743ad296e4" alt="Demo video" width="800" target="_blank" />
+<a href="https://github.com/user-attachments/assets/4d3f26cf-8ccc-413a-b17c-80aa9e1b52d1">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="https://github.com/user-attachments/assets/25d92184-c59e-4115-9961-759ada1ec952">
+    <img src="https://github.com/user-attachments/assets/3a56a008-fcbd-4373-9e40-8d6027120cfb" alt="GPT Researcher превращает вопрос в отчёт со ссылками на источники" width="800">
+  </picture>
 </a>
 
 ## Установка как Claude Skill
@@ -279,7 +282,7 @@ GPT Researcher MCP Server позволяет ИИ-приложениям вро�
 ## 👪 Мультиагентный ассистент
 По мере эволюции ИИ от промпт-инжиниринга и RAG к мультиагентным системам мы представляем ассистентов на [LangGraph](https://python.langchain.com/v0.1/docs/langgraph/) и [AG2](https://github.com/ag2ai/ag2).
 
-Мультиагентные фреймворки повышают глубину и качество исследования за счёт агентов с разными навыками. В духе статьи [STORM](https://arxiv.org/abs/2402.14207) команда ИИ-агентов совместно ведёт исследование: от планирования до публикации.
+Мультиагентные фреймворки повышают глубину и качество исследования за счёт агентов с разными навыками. Команда ИИ-агентов совместно ведёт исследование: от планирования до публикации.
 
 Средний запуск даёт отчёт на 5–6 страниц в PDF, Docx и Markdown.
 
@@ -354,11 +357,11 @@ OKAHU_API_KEY=okh_xxxxxxxx      # required only for the `okahu` exporter
 ---
 
 <p align="center">
-<a href="https://star-history.dera.page/#assafelovic/gpt-researcher">
+<a href="https://star-history.com/#assafelovic/gpt-researcher">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date" />
-    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date" />
   </picture>
 </a>
 </p>

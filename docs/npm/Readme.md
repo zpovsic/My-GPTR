@@ -4,7 +4,7 @@ The gpt-researcher npm package is a WebSocket client for interacting with GPT Re
 
 <div align="center" id="top">
 
-<img src="https://github.com/assafelovic/gpt-researcher/assets/13554167/20af8286-b386-44a5-9a83-3be1365139c3" alt="Logo" width="80">
+<img src="https://raw.githubusercontent.com/assafelovic/gpt-researcher/main/docs/static/img/gptr-logo-tile.png" alt="GPT Researcher logo" width="80">
 
 ####
 
@@ -17,7 +17,7 @@ The gpt-researcher npm package is a WebSocket client for interacting with GPT Re
 [![Open In Colab](https://img.shields.io/static/v1?message=Open%20in%20Colab&logo=googlecolab&labelColor=grey&color=yellow&label=%20&style=flat&logoSize=40)](https://colab.research.google.com/github/assafelovic/gpt-researcher/blob/master/docs/docs/examples/pip-run.ipynb)
 [![Docker Image Version](https://img.shields.io/docker/v/elestio/gpt-researcher/latest?arch=amd64&style=flat&logo=docker&logoColor=white&color=1D63ED)](https://hub.docker.com/r/gptresearcher/gpt-researcher)
 
-[English](README.md) | [中文](README-zh_CN.md) | [日本語](README-ja_JP.md) | [한국어](README-ko_KR.md)
+[English](https://github.com/assafelovic/gpt-researcher/blob/main/README.md) | [中文](https://github.com/assafelovic/gpt-researcher/blob/main/README-zh_CN.md) | [日本語](https://github.com/assafelovic/gpt-researcher/blob/main/README-ja_JP.md) | [한국어](https://github.com/assafelovic/gpt-researcher/blob/main/README-ko_KR.md) | [Русский](https://github.com/assafelovic/gpt-researcher/blob/main/README-ru_RU.md)
 
 </div>
 
@@ -25,7 +25,7 @@ The gpt-researcher npm package is a WebSocket client for interacting with GPT Re
 
 **GPT Researcher is an open deep research agent designed for both web and local research on any given task.** 
 
-The agent produces detailed, factual, and unbiased research reports with citations. GPT Researcher provides a full suite of customization options to create tailor made and domain specific research agents. Inspired by the recent [Plan-and-Solve](https://arxiv.org/abs/2305.04091) and [RAG](https://arxiv.org/abs/2005.11401) papers, GPT Researcher addresses misinformation, speed, determinism, and reliability by offering stable performance and increased speed through parallelized agent work.
+The agent produces detailed, factual, and unbiased research reports with citations. GPT Researcher provides a full suite of customization options to create tailor made and domain specific research agents. GPT Researcher goes well beyond RAG: planner and execution agents break each task into research questions, [decision models](https://docs.gptr.dev/docs/gpt-researcher/gptr/context-filter) keep only the context that is actually useful for answering them, [multi-agent](https://docs.gptr.dev/docs/gpt-researcher/multi_agents/langgraph) workflows coordinate specialized agents from planning to publication, and [recursive deep research](https://docs.gptr.dev/docs/gpt-researcher/gptr/deep_research) explores a topic in both breadth and depth. Research runs in parallel, which keeps it fast, stable and reliable, and reduces misinformation.
 
 **Our mission is to empower individuals and organizations with accurate, unbiased, and factual information through AI.**
 

@@ -3,7 +3,7 @@
   <img src="https://github.com/assafelovic/gpt-researcher/assets/13554167/a45bac7c-092c-42e5-8eb6-69acbf20dde5" alt="Logo" width="25">
   GPT Researcher
 </h1>-->
-<img src="https://github.com/assafelovic/gpt-researcher/assets/13554167/20af8286-b386-44a5-9a83-3be1365139c3" alt="Logo" width="80">
+<img src="https://raw.githubusercontent.com/assafelovic/gpt-researcher/main/docs/static/img/gptr-logo-tile.png" alt="GPT Researcher logo" width="80">
 
 
 ####
@@ -29,7 +29,7 @@
 
 **GPT Researcher는 다양한 작업을 대해 포괄적인 온라인 연구를 수행하도록 설계된 자율 에이전트입니다.**
 
-이 에이전트는 세부적이고 사실에 기반하며 편견 없는 연구 보고서를 생성할 수 있으며, 관련 리소스와 개요에 초점을 맞춘 맞춤형 옵션을 제공합니다.  최근 발표된 [Plan-and-Solve](https://arxiv.org/abs/2305.04091) 및 [RAG](https://arxiv.org/abs/2005.11401) 논문에서 영감을 받아 GPT Researcher는 잘못된 정보, 속도, 결정론적 접근 방식, 신뢰성 문제를 해결하고, 동기화 작업이 아닌 병렬 에이전트 작업을 통해 더 안정적이고 빠른 성능을 제공합니다.
+이 에이전트는 세부적이고 사실에 기반하며 편견 없는 연구 보고서를 생성할 수 있으며, 관련 리소스와 개요에 초점을 맞춘 맞춤형 옵션을 제공합니다.  GPT Researcher는 RAG를 훨씬 넘어섭니다. 계획 에이전트와 실행 에이전트가 각 작업을 연구 질문으로 나누고, [의사결정 모델](https://docs.gptr.dev/docs/gpt-researcher/gptr/context-filter)이 질문에 실제로 유용한 컨텍스트만 남기며, [멀티 에이전트](https://docs.gptr.dev/docs/gpt-researcher/multi_agents/langgraph) 워크플로가 계획부터 출판까지 전문 에이전트들을 조율하고, [재귀적 딥 리서치](https://docs.gptr.dev/docs/gpt-researcher/gptr/deep_research)가 주제를 폭과 깊이 모두에서 탐구합니다. 연구는 병렬로 실행되어 빠르고 안정적이며 신뢰할 수 있고, 잘못된 정보를 줄여 줍니다.
 
 **우리의 목표는 AI의 힘을 활용하여 개인과 조직에게 정확하고 편향 없는 사실에 기반한 정보를 제공하는 것입니다.**
 
@@ -42,7 +42,12 @@
 - 웹 소스만을 사용하면 연구 작업에서 올바른 결론을 도출할 때 편향이 발생할 수 있습니다.
 
 ## 데모
-https://github.com/user-attachments/assets/092e9e71-7e27-475d-8c4f-9dddd28934a3
+<a href="https://github.com/user-attachments/assets/4d3f26cf-8ccc-413a-b17c-80aa9e1b52d1">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="https://github.com/user-attachments/assets/25d92184-c59e-4115-9961-759ada1ec952">
+    <img src="https://github.com/user-attachments/assets/3a56a008-fcbd-4373-9e40-8d6027120cfb" alt="GPT Researcher가 질문을 출처가 달린 보고서로 만드는 모습" width="800">
+  </picture>
+</a>
 
 ## 아키텍처
 주요 아이디어는 "플래너"와 "실행" 에이전트를 실행하는 것으로, 플래너는 연구할 질문을 생성하고, 실행 에이전트는 생성된 각 연구 질문에 따라 가장 관련성 높은 정보를 찾습니다. 마지막으로 플래너는 모든 관련 정보를 필터링하고 집계하여 연구 보고서를 작성합니다.
@@ -114,7 +119,7 @@ export TAVILY_API_KEY={Tavily API 키 입력}
 더 영구적인 설정을 원한다면, 현재의 `gpt-researcher` 디렉토리에 `.env` 파일을 생성하고 환경 변수를 입력하세요 (export 없이).
 
 - 기본 LLM은 [GPT](https://platform.openai.com/docs/guides/gpt)이지만, `claude`, `ollama3`, `gemini`, `mistral` 등 다른 LLM도 사용할 수 있습니다. LLM 제공자를 변경하는 방법은 [LLMs 문서](https://docs.gptr.dev/docs/gpt-researcher/llms)를 참조하세요. 이 프로젝트는 OpenAI GPT 모델에 최적화되어 있습니다.
-- 기본 검색기는 [Tavily](https://app.tavily.com)이지만, `duckduckgo`, `google`, `bing`, `searchapi`, `serper`, `searx`, `arxiv`, `exa` 등의 검색기를 사용할 수 있습니다. 검색 제공자를 변경하는 방법은 [검색기 문서](https://docs.gptr.dev/docs/gpt-researcher/retrievers)를 참조하세요.
+- 기본 검색기는 [Tavily](https://app.tavily.com)이지만, `duckduckgo`, `google`, `bing`, `searchapi`, `serper`, `searx`, `arxiv`, `exa` 등의 검색기를 사용할 수 있습니다. 검색 제공자를 변경하는 방법은 [검색기 문서](https://docs.gptr.dev/docs/gpt-researcher/search-engines)를 참조하세요.
 
 ### 빠른 시작
 
@@ -134,7 +139,7 @@ python -m uvicorn main:app --reload
 
 <br />
 
-**[Poetry](https://docs.gptr.dev/docs/gpt-researcher/getting-started#poetry) 또는 [가상 환경](https://docs.gptr.dev/docs/gpt-researcher/getting-started/getting-started#virtual-environment)에 대해 배우고 싶다면, [문서](https://docs.gptr.dev/docs/gpt-researcher/getting-started/getting-started)를 참조하세요.**
+**[Poetry](https://docs.gptr.dev/docs/gpt-researcher/getting-started#poetry) 또는 [가상 환경](https://docs.gptr.dev/docs/gpt-researcher/getting-started#virtual-environment)에 대해 배우고 싶다면, [문서](https://docs.gptr.dev/docs/gpt-researcher/getting-started)를 참조하세요.**
 
 ### PIP 패키지로 실행하기
 ```bash
@@ -205,7 +210,7 @@ export DOC_PATH="./my-docs"
 
 AI가 프롬프트 엔지니어링 및 RAG에서 다중 에이전트 시스템으로 발전함에 따라, 우리는 [LangGraph](https://python.langchain.com/v0.1/docs/langgraph/)로 구축된 새로운 다중 에이전트 어시스턴트를 소개합니다.
 
-LangGraph를 사용하면 여러 에이전트의 전문 기술을 활용하여 연구 과정의 깊이와 질을 크게 향상시킬 수 있습니다. 최근 [STORM](https://arxiv.org/abs/2402.14207) 논문에서 영감을 받아, 이 프로젝트는 AI 에이전트 팀이 주제에 대한 연구를 계획에서 출판까지 함께 수행하는 방법을 보여줍니다.
+LangGraph를 사용하면 여러 에이전트의 전문 기술을 활용하여 연구 과정의 깊이와 질을 크게 향상시킬 수 있습니다. 이 프로젝트는 AI 에이전트 팀이 주제에 대한 연구를 계획에서 출판까지 함께 수행하는 방법을 보여줍니다.
 
 평균 실행은 5-6 페이지 분량의 연구 보고서를 PDF, Docx, Markdown 형식으로 생성합니다.
 
@@ -253,11 +258,11 @@ GPT-Researcher는 사용자 경험을 개선하고 연구 프로세스를 간소
 ---
 
 <p align="center">
-<a href="https://star-history.dera.page/#assafelovic/gpt-researcher">
+<a href="https://star-history.com/#assafelovic/gpt-researcher">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date" />
-    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date" />
   </picture>
 </a>
 </p>

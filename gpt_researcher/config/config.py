@@ -9,6 +9,7 @@ import json
 import json_repair
 import os
 import warnings
+from copy import deepcopy
 from typing import Any, Dict, List, Type, Union, get_args, get_origin
 
 from gpt_researcher.llm_provider.generic.base import ReasoningEfforts
@@ -47,18 +48,8 @@ class Config:
         self._set_embedding_attributes()
         self._set_llm_attributes()
         self._handle_deprecated_attributes()
-        if config_to_use['REPORT_SOURCE'] != 'web':
+        if (os.getenv('REPORT_SOURCE') or config_to_use['REPORT_SOURCE']) != 'web':
           self._set_doc_path(config_to_use)
-
-        # MCP support configuration
-        self.mcp_servers = []  # List of MCP server configurations
-        self.mcp_allowed_root_paths = []  # Allowed root paths for MCP servers
-
-        # Read from config
-        if hasattr(self, 'mcp_servers'):
-            self.mcp_servers = self.mcp_servers
-        if hasattr(self, 'mcp_allowed_root_paths'):
-            self.mcp_allowed_root_paths = self.mcp_allowed_root_paths
 
     def _set_attributes(self, config: Dict[str, Any]) -> None:
         """Set configuration attributes from config dictionary.
@@ -94,7 +85,7 @@ class Config:
         self.fast_llm_provider, self.fast_llm_model = self.parse_llm(self.fast_llm)
         self.smart_llm_provider, self.smart_llm_model = self.parse_llm(self.smart_llm)
         self.strategic_llm_provider, self.strategic_llm_model = self.parse_llm(self.strategic_llm)
-        self.reasoning_effort = self.parse_reasoning_effort(os.getenv("REASONING_EFFORT"))
+        self.reasoning_effort = self.parse_reasoning_effort(self.reasoning_effort)
 
     def _handle_deprecated_attributes(self) -> None:
         """Handle deprecated configuration attributes with warnings."""
@@ -122,7 +113,7 @@ class Config:
             elif embedding_provider == "gigachat":
                 self.embedding_model = "Embeddings"
             elif embedding_provider == "google_genai":
-                self.embedding_model = "text-embedding-004"
+                self.embedding_model = "gemini-embedding-2"
             else:
                 raise Exception("Embedding provider not found.")
 
@@ -146,7 +137,8 @@ class Config:
             self.smart_llm_model = os.environ["SMART_LLM_MODEL"] or self.smart_llm_model
 
     def _set_doc_path(self, config: Dict[str, Any]) -> None:
-        self.doc_path = config['DOC_PATH']
+        if not self.doc_path:
+            self.doc_path = config['DOC_PATH']
         if self.doc_path:
             try:
                 self.validate_doc_path()
@@ -156,10 +148,14 @@ class Config:
 
     @classmethod
     def load_config(cls, config_path: str | None) -> Dict[str, Any]:
-        """Load a configuration by name."""
+        """Load a configuration by name.
+
+        Always returns a fresh copy, so mutable defaults such as ``LLM_KWARGS``
+        or ``MCP_SERVERS`` are never shared between ``Config`` instances.
+        """
         config_path = config_path or os.environ.get("CONFIG_PATH")
         if not config_path:
-            return DEFAULT_CONFIG
+            return deepcopy(DEFAULT_CONFIG)
 
         # config_path = os.path.join(cls.CONFIG_DIR, config_path)
         if not os.path.exists(config_path):
@@ -167,13 +163,13 @@ class Config:
                 print(f"Warning: Configuration not found at '{config_path}'. Using default configuration.")
                 if not config_path.endswith(".json"):
                     print(f"Do you mean '{config_path}.json'?")
-            return DEFAULT_CONFIG
+            return deepcopy(DEFAULT_CONFIG)
 
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             custom_config = json.load(f)
 
         # Merge with default config to ensure all keys are present
-        merged_config = DEFAULT_CONFIG.copy()
+        merged_config = deepcopy(DEFAULT_CONFIG)
         merged_config.update(custom_config)
         return merged_config
 

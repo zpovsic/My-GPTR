@@ -1,8 +1,8 @@
 # GPT Researcher x Deep Agents: 2x the verified evidence, same harness
 
 *A shareable summary of the new Deep Agents example and its benchmark results.
-Full details: [example](https://github.com/assafelovic/gpt-researcher/tree/master/deep_agents),
-[BENCHMARK.md](https://github.com/assafelovic/gpt-researcher/blob/master/deep_agents/BENCHMARK.md).*
+Full details: [example](https://github.com/assafelovic/gpt-researcher/tree/main/deep_agents),
+[BENCHMARK.md](https://github.com/assafelovic/gpt-researcher/blob/main/deep_agents/BENCHMARK.md).*
 
 ## What we built
 
@@ -12,8 +12,8 @@ the research engine: a chief-editor deep agent plans a report outline with
 `write_todos`, spawns parallel `researcher` subagents, and each subagent
 calls GPT Researcher's full pipeline (`deep_research`) to produce a cited
 section draft. The harness handles orchestration; GPT Researcher handles
-evidence. It reproduces the STORM-style pipeline of our 8-agent LangGraph
-example in a fraction of the code, and works over the web, local documents
+evidence. It reproduces the plan, research, review and publish pipeline of
+our 8-agent LangGraph example in a fraction of the code, and works over the web, local documents
 (PDF/DOCX/md), or both.
 
 ## What we measured
@@ -76,5 +76,5 @@ is grounded in sources that were actually read.
 Everything ships in the repo: the agent builders, a generation script that
 emits DeepResearch Bench-format reports for both setups, and a small patch
 adding an OpenAI judge backend to the official scoring harness. See
-[BENCHMARK.md](https://github.com/assafelovic/gpt-researcher/blob/master/deep_agents/BENCHMARK.md)
+[BENCHMARK.md](https://github.com/assafelovic/gpt-researcher/blob/main/deep_agents/BENCHMARK.md)
 for the three commands.

@@ -3,7 +3,7 @@
   <img src="https://github.com/assafelovic/gpt-researcher/assets/13554167/a45bac7c-092c-42e5-8eb6-69acbf20dde5" alt="Logo" width="25">
   GPT Researcher
 </h1>-->
-<img src="https://github.com/assafelovic/gpt-researcher/assets/13554167/20af8286-b386-44a5-9a83-3be1365139c3" alt="Logo" width="80">
+<img src="https://raw.githubusercontent.com/assafelovic/gpt-researcher/main/docs/static/img/gptr-logo-tile.png" alt="GPT Researcher logo" width="80">
 
 
 ####
@@ -29,7 +29,7 @@
 
 **GPT Researcher は、さまざまなタスクに対する包括的なオンラインリサーチのために設計された自律エージェントです。**
 
-このエージェントは、詳細で事実に基づいた偏りのない研究レポートを生成することができ、関連するリソース、アウトライン、およびレッスンに焦点を当てるためのカスタマイズオプションを提供します。最近の [Plan-and-Solve](https://arxiv.org/abs/2305.04091) および [RAG](https://arxiv.org/abs/2005.11401) 論文に触発され、GPT Researcher は速度、決定論、および信頼性の問題に対処し、同期操作ではなく並列化されたエージェント作業を通じてより安定したパフォーマンスと高速化を提供します。
+このエージェントは、詳細で事実に基づいた偏りのない研究レポートを生成することができ、関連するリソース、アウトライン、およびレッスンに焦点を当てるためのカスタマイズオプションを提供します。GPT Researcher は RAG にとどまりません。プランナーと実行エージェントが各タスクをリサーチ質問に分解し、[意思決定モデル](https://docs.gptr.dev/docs/gpt-researcher/gptr/context-filter)が回答に本当に役立つコンテキストだけを残し、[マルチエージェント](https://docs.gptr.dev/docs/gpt-researcher/multi_agents/langgraph)ワークフローが計画から公開まで専門エージェントを連携させ、[再帰的なディープリサーチ](https://docs.gptr.dev/docs/gpt-researcher/gptr/deep_research)がトピックを幅と深さの両面から探索します。リサーチは並列で実行されるため、高速・安定・高信頼で、誤情報も減らせます。
 
 **私たちの使命は、AIの力を活用して、個人や組織に正確で偏りのない事実に基づいた情報を提供することです。**
 
@@ -58,7 +58,12 @@
 * 最後に、すべての要約されたソースをフィルタリングおよび集約し、最終的な研究レポートを生成します。
 
 ## デモ
-https://github.com/assafelovic/gpt-researcher/assets/13554167/a00c89a6-a295-4dd0-b58d-098a31c40fda
+<a href="https://github.com/user-attachments/assets/4d3f26cf-8ccc-413a-b17c-80aa9e1b52d1">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="https://github.com/user-attachments/assets/25d92184-c59e-4115-9961-759ada1ec952">
+    <img src="https://github.com/user-attachments/assets/3a56a008-fcbd-4373-9e40-8d6027120cfb" alt="GPT Researcherが質問から出典付きのレポートを作成する様子" width="800">
+  </picture>
+</a>
 
 ## チュートリアル
  - [動作原理](https://docs.gptr.dev/blog/building-gpt-researcher)
@@ -170,11 +175,11 @@ GPT Researcher は **LangSmith** をサポートしており、複雑なマル�
 ---
 
 <p align="center">
-<a href="https://star-history.dera.page/#assafelovic/gpt-researcher">
+<a href="https://star-history.com/#assafelovic/gpt-researcher">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date" />
-    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=assafelovic/gpt-researcher&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=assafelovic/gpt-researcher&type=Date" />
   </picture>
 </a>
 </p>
